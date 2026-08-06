@@ -1,0 +1,55 @@
+{% extends 'navbar.html' %}
+
+{% block title %}Submit Assignment - CampusHub{% endblock %}
+
+{% block content %}
+<div class="container">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'assignments:assignment_list' %}">Assignments</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'assignments:assignment_detail' assignment.id %}">{{ assignment.title|truncatechars:30 }}</a></li>
+            <li class="breadcrumb-item active">Submit</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Submit: {{ assignment.title }}</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info mb-4">
+                        <strong>Due Date:</strong> {{ assignment.due_date|date:"M d, Y H:i" }}
+                        {% if assignment.allow_late_submission %}
+                        <span class="ms-2">(Late submissions allowed)</span>
+                        {% endif %}
+                    </div>
+
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+                            <label class="form-label">Submission Content</label>
+                            <textarea name="content" class="form-control" rows="6" placeholder="Enter your answer or explanation...">{{ submission.content|default:'' }}</textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Attachment (optional)</label>
+                            <input type="file" name="attachment" class="form-control">
+                            {% if submission.attachment %}
+                            <small class="text-muted">Current: <a href="{{ submission.attachment.url }}">{{ submission.attachment.name }}</a></small>
+                            {% endif %}
+                        </div>
+
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-upload"></i> Submit
+                        </button>
+                        <a href="{% url 'assignments:assignment_detail' assignment.id %}" class="btn btn-secondary">Cancel</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Attendance | CampusHub</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        body { background: #f4f7fb; }
+        .hero {
+            background: linear-gradient(135deg, #102a43 0%, #1f7a8c 100%);
+            color: #fff;
+            border-radius: 24px;
+        }
+        .metric-card {
+            border: 0;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(16, 42, 67, 0.08);
+        }
+        .table-wrap { border-radius: 18px; overflow: hidden; }
+    </style>
+</head>
+<body>
+    {% include 'navbar.html' %}
+
+    <div class="container py-4">
+        {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+        {% endif %}
+
+        <div class="hero p-4 p-md-5 mb-4">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <p class="text-uppercase opacity-75 mb-2">Attendance Overview</p>
+                    <h1 class="mb-2">My Attendance Dashboard</h1>
+                    <p class="mb-0 opacity-75">Track subject-wise attendance, total classes, and your overall percentage in one place.</p>
+                </div>
+                <div class="col-md-4 text-md-end mt-4 mt-md-0">
+                    <div class="display-5 fw-bold">{{ overall_percentage }}%</div>
+                    <div class="opacity-75">Overall attendance</div>
+                </div>
+            </div>
+        </div>
+
+        {% if low_attendance %}
+        <div class="alert alert-danger d-flex align-items-center">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            Your attendance is below 75%. Please attend more classes to stay eligible.
+        </div>
+        {% endif %}
+
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="card metric-card h-100">
+                    <div class="card-body">
+                        <small class="text-muted">Classes Conducted</small>
+                        <h2 class="mb-0">{{ total_classes }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card metric-card h-100">
+                    <div class="card-body">
+                        <small class="text-muted">Classes Attended</small>
+                        <h2 class="mb-0 text-success">{{ classes_attended }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card metric-card h-100">
+                    <div class="card-body">
+                        <small class="text-muted">Attendance Progress</small>
+                        <div class="progress mt-2" style="height: 14px;">
+                            <div class="progress-bar bg-success" role="progressbar" style="width: {{ overall_percentage }}%;"></div>
+                        </div>
+                        <div class="mt-2 fw-semibold">{{ overall_percentage }}%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card metric-card mb-4">
+            <div class="card-body">
+                <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">Subject Wise Attendance</h5>
+                    <form method="get" class="d-flex gap-2 flex-wrap">
+                        <select class="form-select" name="course">
+                            <option value="">All subjects</option>
+                            {% for course in courses %}
+                            <option value="{{ course.id }}" {% if selected_course_id == course.id|stringformat:'s' %}selected{% endif %}>{{ course.code }} - {{ course.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <input type="date" class="form-control" name="date" value="{{ selected_date }}">
+                        <button class="btn btn-primary" type="submit">Filter</button>
+                    </form>
+                </div>
+                <div class="table-responsive table-wrap">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Subject</th>
+                                <th>Classes</th>
+                                <th>Attended</th>
+                                <th>Percentage</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for summary in course_summaries %}
+                            <tr>
+                                <td>{{ summary.course.code }} - {{ summary.course.name }}</td>
+                                <td>{{ summary.total }}</td>
+                                <td>{{ summary.present }}</td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="progress flex-grow-1" style="height: 10px;">
+                                            <div class="progress-bar bg-success" style="width: {{ summary.percentage }}%;"></div>
+                                        </div>
+                                        <strong>{{ summary.percentage }}%</strong>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-4">No attendance records found.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card metric-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">Attendance History</h5>
+                    <input id="historySearch" type="search" class="form-control w-auto" placeholder="Search subject or status">
+                </div>
+                <div class="table-responsive table-wrap">
+                    <table class="table table-hover align-middle mb-0" id="attendanceHistoryTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Subject</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for record in records %}
+                            <tr>
+                                <td>{{ record.date|date:"M d, Y" }}</td>
+                                <td>{{ record.course.code }} - {{ record.course.name }}</td>
+                                <td>
+                                    {% if record.status == 'present' %}
+                                    <span class="badge bg-success">Present</span>
+                                    {% else %}
+                                    <span class="badge bg-danger">Absent</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted py-4">No records match your filters.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const historySearch = document.getElementById('historySearch');
+        const attendanceHistoryTable = document.getElementById('attendanceHistoryTable');
+        if (historySearch && attendanceHistoryTable) {
+            historySearch.addEventListener('input', function () {
+                const filter = this.value.toLowerCase();
+                attendanceHistoryTable.querySelectorAll('tbody tr').forEach((row) => {
+                    row.style.display = row.innerText.toLowerCase().includes(filter) ? '' : 'none';
+                });
+            });
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

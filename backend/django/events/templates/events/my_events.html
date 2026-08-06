@@ -1,0 +1,26 @@
+{% extends 'navbar.html' %}
+
+{% block title %}My Events - CampusHub{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2><i class="bi bi-calendar-check"></i> My Events</h2>
+
+    {% if registrations %}
+    <div class="list-group">
+        {% for reg in registrations %}
+        <a href="{% url 'events:event_detail' reg.event.id %}" class="list-group-item list-group-item-action">
+            <div class="d-flex w-100 justify-content-between">
+                <h5 class="mb-1">{{ reg.event.title }}</h5>
+                <small class="text-success">{{ reg.get_status_display }}</small>
+            </div>
+            <p class="mb-1">{{ reg.event.description|truncatechars:100 }}</p>
+            <small>{{ reg.event.start_date|date:"M d, Y" }} - {{ reg.event.venue }}</small>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info">You haven't registered for any events yet.</div>
+    {% endif %}
+</div>
+{% endblock %}

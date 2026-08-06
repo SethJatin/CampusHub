@@ -1,0 +1,40 @@
+{% extends 'navbar.html' %}
+
+{% block title %}Announcements - CampusHub{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-megaphone"></i> Announcements</h2>
+        {% if user.is_authenticated and user.role == 'faculty' or user.is_staff %}
+        <a href="{% url 'events:create_announcement' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> New Announcement
+        </a>
+        {% endif %}
+    </div>
+
+    {% if announcements %}
+    <div class="list-group">
+        {% for announcement in announcements %}
+        <a href="{% url 'events:announcement_detail' announcement.id %}" class="list-group-item list-group-item-action">
+            <div class="d-flex w-100 justify-content-between">
+                <h5 class="mb-1">
+                    {% if announcement.priority == 'urgent' %}
+                    <span class="badge bg-danger">URGENT</span>
+                    {% elif announcement.priority == 'high' %}
+                    <span class="badge bg-warning">IMPORTANT</span>
+                    {% endif %}
+                    {{ announcement.title }}
+                </h5>
+                <small class="text-muted">{{ announcement.created_at|timesince }} ago</small>
+            </div>
+            <p class="mb-1">{{ announcement.content|truncatechars:150 }}</p>
+            <small class="text-muted">By {{ announcement.created_by.get_full_name }}</small>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info">No announcements.</div>
+    {% endif %}
+</div>
+{% endblock %}

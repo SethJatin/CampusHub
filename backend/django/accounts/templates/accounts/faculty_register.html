@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Faculty Registration | CampusHub</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+            padding: 24px 0;
+        }
+        .register-card {
+            background: #fff;
+            border-radius: 18px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.18);
+            overflow: hidden;
+        }
+        .register-header {
+            background: linear-gradient(135deg, #9f1239 0%, #f97316 100%);
+            color: #fff;
+            padding: 24px;
+            text-align: center;
+        }
+        .register-body {
+            padding: 22px;
+        }
+        .form-control, .form-select {
+            border-radius: 10px;
+            padding: 11px 12px;
+        }
+        .form-control:focus, .form-select:focus {
+            box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2);
+            border-color: #f97316;
+        }
+        .btn-register {
+            background: linear-gradient(135deg, #9f1239 0%, #f97316 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 12px;
+            font-weight: 600;
+        }
+        .btn-register:hover {
+            opacity: 0.95;
+        }
+        .section-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            color: #9f1239;
+            text-transform: uppercase;
+        }
+        .field-error {
+            color: #dc3545;
+            font-size: 0.875rem;
+            margin-top: 0.35rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-5">
+                <div class="register-card">
+                    <div class="register-header">
+                        <h3 class="mb-1"><i class="bi bi-mortarboard-fill"></i> Faculty Registration</h3>
+                        <p class="mb-0">Set up your faculty profile quickly and clearly.</p>
+                    </div>
+                    <div class="register-body">
+                        {% if messages %}
+                            {% for message in messages %}
+                                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+
+                        <form method="post" novalidate>
+                            {% csrf_token %}
+                            {{ user_form.role }}
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="{{ user_form.email.id_for_label }}" class="form-label">{{ user_form.email.label }}</label>
+                                    {{ user_form.email }}
+                                    {% for error in user_form.email.errors %}
+                                        <div class="field-error">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="{{ user_form.username.id_for_label }}" class="form-label">{{ user_form.username.label }}</label>
+                                    {{ user_form.username }}
+                                    {% for error in user_form.username.errors %}
+                                        <div class="field-error">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="{{ user_form.first_name.id_for_label }}" class="form-label">{{ user_form.first_name.label }}</label>
+                                    {{ user_form.first_name }}
+                                    {% for error in user_form.first_name.errors %}
+                                        <div class="field-error">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="{{ user_form.last_name.id_for_label }}" class="form-label">{{ user_form.last_name.label }}</label>
+                                    {{ user_form.last_name }}
+                                    {% for error in user_form.last_name.errors %}
+                                        <div class="field-error">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="{{ user_form.password1.id_for_label }}" class="form-label">{{ user_form.password1.label }}</label>
+                                    {{ user_form.password1 }}
+                                    {% for error in user_form.password1.errors %}
+                                        <div class="field-error">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="{{ user_form.password2.id_for_label }}" class="form-label">{{ user_form.password2.label }}</label>
+                                    {{ user_form.password2 }}
+                                    {% for error in user_form.password2.errors %}
+                                        <div class="field-error">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% if user_form.non_field_errors %}
+                                {% for error in user_form.non_field_errors %}
+                                    <div class="alert alert-danger py-2">{{ error }}</div>
+                                {% endfor %}
+                            {% endif %}
+
+                            <div class="section-title mb-3 mt-4">Professional Information</div>
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label for="{{ profile_form.employee_id.id_for_label }}" class="form-label">{{ profile_form.employee_id.label }}</label>
+                                    {{ profile_form.employee_id }}
+                                    {% for error in profile_form.employee_id.errors %}
+                                        <div class="field-error">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="{{ profile_form.department.id_for_label }}" class="form-label">{{ profile_form.department.label }}</label>
+                                    {{ profile_form.department }}
+                                    {% for error in profile_form.department.errors %}
+                                        <div class="field-error">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="{{ profile_form.designation.id_for_label }}" class="form-label">{{ profile_form.designation.label }}</label>
+                                    {{ profile_form.designation }}
+                                    {% for error in profile_form.designation.errors %}
+                                        <div class="field-error">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="{{ profile_form.specialization.id_for_label }}" class="form-label">{{ profile_form.specialization.label }}</label>
+                                    {{ profile_form.specialization }}
+                                    {% for error in profile_form.specialization.errors %}
+                                        <div class="field-error">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="{{ profile_form.qualification.id_for_label }}" class="form-label">{{ profile_form.qualification.label }}</label>
+                                    {{ profile_form.qualification }}
+                                    {% for error in profile_form.qualification.errors %}
+                                        <div class="field-error">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="{{ profile_form.experience_years.id_for_label }}" class="form-label">{{ profile_form.experience_years.label }}</label>
+                                    {{ profile_form.experience_years }}
+                                    {% for error in profile_form.experience_years.errors %}
+                                        <div class="field-error">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="{{ profile_form.publications.id_for_label }}" class="form-label">{{ profile_form.publications.label }}</label>
+                                    {{ profile_form.publications }}
+                                    {% for error in profile_form.publications.errors %}
+                                        <div class="field-error">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="{{ profile_form.office_location.id_for_label }}" class="form-label">{{ profile_form.office_location.label }}</label>
+                                    {{ profile_form.office_location }}
+                                    {% for error in profile_form.office_location.errors %}
+                                        <div class="field-error">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="{{ profile_form.office_hours.id_for_label }}" class="form-label">{{ profile_form.office_hours.label }}</label>
+                                    {{ profile_form.office_hours }}
+                                    {% for error in profile_form.office_hours.errors %}
+                                        <div class="field-error">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                <div class="col-12">
+                                    <label for="{{ profile_form.research_interests.id_for_label }}" class="form-label">{{ profile_form.research_interests.label }}</label>
+                                    {{ profile_form.research_interests }}
+                                    {% for error in profile_form.research_interests.errors %}
+                                        <div class="field-error">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% if profile_form.non_field_errors %}
+                                {% for error in profile_form.non_field_errors %}
+                                    <div class="alert alert-danger py-2">{{ error }}</div>
+                                {% endfor %}
+                            {% endif %}
+
+                            <button type="submit" class="btn btn-danger btn-register w-100 mt-2">
+                                <i class="bi bi-person-plus"></i> Register as Faculty
+                            </button>
+                        </form>
+
+                        <p class="text-center mt-3 mb-0">
+                            Already have an account? <a href="{% url 'accounts:login' %}">Login</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

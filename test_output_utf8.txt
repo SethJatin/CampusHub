@@ -1,0 +1,5 @@
+--- STARTING EXPRESS BACKEND INTEGRATION TESTS ---
+Testing sqlite3 db connection...
+Connected to the SQLite database at: D:\Project3\backend\django\db.sqlite3
+✓ Connected! Total users in accounts_user: 18
+✗ TEST FAILED: SQLITE_ERROR: no such table: express_verifications

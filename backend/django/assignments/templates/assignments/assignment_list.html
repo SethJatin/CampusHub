@@ -1,0 +1,79 @@
+{% extends 'navbar.html' %}
+
+{% block title %}Assignments - CampusHub{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-journal-text"></i> Assignments</h2>
+        {% if user.role == 'faculty' or user.is_staff %}
+        <a href="{% url 'assignments:create_assignment' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Create Assignment
+        </a>
+        {% endif %}
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <select name="course" class="form-select">
+                        <option value="">All Courses</option>
+                        <!-- Add courses here -->
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select name="status" class="form-select">
+                        <option value="">All Status</option>
+                        <option value="draft">Draft</option>
+                        <option value="published">Published</option>
+                        <option value="closed">Closed</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-outline-primary w-100">Filter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if page_obj %}
+    <div class="list-group">
+        {% for assignment in page_obj %}
+        <a href="{% url 'assignments:assignment_detail' assignment.id %}" class="list-group-item list-group-item-action">
+            <div class="d-flex w-100 justify-content-between">
+                <h5 class="mb-1">{{ assignment.title }}</h5>
+                <small class="{% if assignment.status == 'published' %}text-success{% elif assignment.status == 'draft' %}text-warning{% else %}text-muted{% endif %}">
+                    {{ assignment.get_status_display }}
+                </small>
+            </div>
+            <p class="mb-1 text-muted">{{ assignment.course.code }} - {{ assignment.course.name }}</p>
+            <small>
+                <i class="bi bi-calendar"></i> Due: {{ assignment.due_date|date:"M d, Y H:i" }}
+                {% if assignment.total_marks %}<span class="ms-3"><i class="bi bi-star"></i> {{ assignment.total_marks }} marks</span>{% endif %}
+            </small>
+        </a>
+        {% endfor %}
+    </div>
+
+    {% if page_obj.has_other_pages %}
+    <nav class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item"><a class="page-link" href="?page=1">First</a></li>
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a></li>
+            {% endif %}
+            <li class="page-item active"><span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
+            {% if page_obj.has_next %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a></li>
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+
+    {% else %}
+    <div class="alert alert-info">No assignments found.</div>
+    {% endif %}
+</div>
+{% endblock %}

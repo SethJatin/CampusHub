@@ -1,0 +1,21 @@
+--- STARTING EXPRESS BACKEND INTEGRATION TESTS ---
+Testing sqlite3 db connection...
+Connected to the SQLite database at: D:\Project3\backend\django\db.sqlite3
+✓ Connected! Total users in accounts_user: 19
+
+Testing new user registration logic...
+✓ Successfully created user row with ID: 23
+✓ Created corresponding StudentProfile record
+✓ Saved Nodemailer OTP code (987654) into express_verifications
+
+Testing OTP Verification validation...
+✓ Verification code matches successfully
+✓ Updated accounts_user "is_verified" to 1, cleaned verify record
+
+Testing Password Authentication...
+✓ Password verify matches registered hash
+✓ User verified login checks pass successfully
+
+✓ Cleaned up test user data
+
+*** ALL BACKEND INTEGRATION TESTS PASSED SUCCESSFULLY! ***

@@ -1,0 +1,107 @@
+{% extends 'navbar.html' %}
+
+{% block title %}{{ note.title }} - CampusHub{% endblock %}
+
+{% block content %}
+<div class="container">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'notes:note_list' %}">Notes</a></li>
+            <li class="breadcrumb-item active">{{ note.title|truncatechars:30 }}</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="badge bg-secondary">{{ note.get_note_type_display }}</span>
+                        <h4 class="d-inline-block ms-2">{{ note.title }}</h4>
+                    </div>
+                    <a href="{% url 'notes:download_note' note.id %}" class="btn btn-primary">
+                        <i class="bi bi-download"></i> Download
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if note.description %}
+                    <p>{{ note.description|linebreaks }}</p>
+                    {% endif %}
+
+                    {% if note.content %}
+                    <div class="bg-light p-3 rounded">
+                        <pre class="pre-scrollable">{{ note.content }}</pre>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer text-muted">
+                    <small>
+                        Uploaded by {{ note.uploaded_by.get_full_name }} on {{ note.created_at|date:"M d, Y" }}
+                        | <i class="bi bi-eye"></i> {{ note.views }} views
+                        | <i class="bi bi-download"></i> {{ note.downloads }} downloads
+                    </small>
+                </div>
+            </div>
+
+            <!-- Rating -->
+            <div class="card mb-4">
+                <div class="card-header"><h6 class="mb-0">Rate this Note</h6></div>
+                <div class="card-body">
+                    {% if user.is_authenticated %}
+                    <form method="post" action="{% url 'notes:rate_note' note.id %}">
+                        {% csrf_token %}
+                        <div class="d-flex align-items-center">
+                            {% for i in "12345" %}
+                            <button type="submit" name="rating" value="{{ i }}" class="btn btn-sm {% if user_rating.rating >= i %}btn-warning{% else %}btn-outline-warning{% endif %}">
+                                <i class="bi bi-star-fill"></i>
+                            </button>
+                            {% endfor %}
+                            <span class="ms-3">Average: {{ avg_rating|floatformat:1 }}/5</span>
+                        </div>
+                    </form>
+                    {% else %}
+                    <p class="text-muted mb-0">Login to rate</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Comments -->
+            <div class="card">
+                <div class="card-header"><h6 class="mb-0">Comments ({{ comments.count }})</h6></div>
+                <div class="card-body">
+                    {% if user.is_authenticated %}
+                    <form method="post" class="mb-4">
+                        {% csrf_token %}
+                        {{ comment_form.as_p }}
+                        <button type="submit" class="btn btn-primary btn-sm">Post Comment</button>
+                    </form>
+                    {% endif %}
+
+                    {% for comment in comments %}
+                    <div class="border-bottom pb-3 mb-3">
+                        <strong>{{ comment.user.get_full_name }}</strong>
+                        <small class="text-muted">{{ comment.created_at|timesince }} ago</small>
+                        <p class="mb-0 mt-2">{{ comment.content }}</p>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted">No comments yet.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header"><h6 class="mb-0">Details</h6></div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item"><strong>Course:</strong> {{ note.course.code }} - {{ note.course.name }}</li>
+                    <li class="list-group-item"><strong>Type:</strong> {{ note.get_note_type_display }}</li>
+                    <li class="list-group-item"><strong>Views:</strong> {{ note.views }}</li>
+                    <li class="list-group-item"><strong>Downloads:</strong> {{ note.downloads }}</li>
+                    <li class="list-group-item"><strong>Uploaded:</strong> {{ note.created_at|date:"M d, Y" }}</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

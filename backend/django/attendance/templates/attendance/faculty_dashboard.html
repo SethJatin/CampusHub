@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Faculty Attendance | CampusHub</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        body { background: linear-gradient(180deg, #f8fbff 0%, #eef4ff 100%); }
+        .panel {
+            border: 0;
+            border-radius: 24px;
+            box-shadow: 0 18px 42px rgba(15, 23, 42, 0.08);
+        }
+        .soft-badge {
+            border-radius: 999px;
+            padding: 0.45rem 0.8rem;
+        }
+    </style>
+</head>
+<body>
+    {% include 'navbar.html' %}
+
+    <div class="container py-4">
+        {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+        {% endif %}
+
+        <div class="card panel mb-4">
+            <div class="card-body p-4 p-md-5">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+                    <div>
+                        <p class="text-uppercase text-muted mb-1">Faculty workspace</p>
+                        <h2 class="mb-0">Attendance Dashboard</h2>
+                    </div>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <span class="badge bg-success soft-badge">Present {{ marked_present }}</span>
+                        <span class="badge bg-danger soft-badge">Absent {{ marked_absent }}</span>
+                        <span class="badge bg-dark soft-badge">Students {{ total_students }}</span>
+                    </div>
+                </div>
+
+                <form method="get" class="row g-3 align-items-end mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label">Subject / Class</label>
+                        <select name="course" class="form-select">
+                            <option value="">Select a class</option>
+                            {% for course in courses %}
+                            <option value="{{ course.id }}" {% if selected_course and selected_course.id == course.id %}selected{% endif %}>{{ course.code }} - {{ course.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Date</label>
+                        <input type="date" name="date" class="form-control" value="{{ selected_date }}">
+                    </div>
+                    <div class="col-md-2 d-grid">
+                        <button type="submit" class="btn btn-primary">Load Class</button>
+                    </div>
+                </form>
+
+                {% if selected_course %}
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="course" value="{{ selected_course.id }}">
+                    <input type="hidden" name="date" value="{{ selected_date }}">
+
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+                        <div>
+                            <h5 class="mb-1">{{ selected_course.code }} - {{ selected_course.name }}</h5>
+                            <div class="text-muted">{{ selected_course.department }} | {{ selected_course.schedule|default:"Schedule not set" }}</div>
+                        </div>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <button type="button" class="btn btn-outline-success" id="markAllPresent">Mark All Present</button>
+                            <button type="submit" class="btn btn-success">Save Attendance</button>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <div class="card border-0 bg-light">
+                                <div class="card-body">
+                                    <small class="text-muted">Date</small>
+                                    <div class="fw-semibold">{{ selected_date }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card border-0 bg-light">
+                                <div class="card-body">
+                                    <small class="text-muted">Enrolled Students</small>
+                                    <div class="fw-semibold">{{ total_students }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card border-0 bg-light">
+                                <div class="card-body">
+                                    <small class="text-muted">Tip</small>
+                                    <div class="fw-semibold">Use the search box to find a student fast.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mb-3 gap-3 flex-wrap">
+                        <input id="studentSearch" type="search" class="form-control w-auto" placeholder="Search by name or roll number">
+                        <div class="text-muted small">Present is the default. Change any row to absent when needed.</div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table align-middle table-hover" id="attendanceTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Roll Number</th>
+                                    <th>Student</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for enrollment in enrolled_students %}
+                                <tr>
+                                    <td>{{ enrollment.student.student_profile.roll_number|default:enrollment.student.username }}</td>
+                                    <td>
+                                        <div class="fw-semibold">{{ enrollment.student.get_full_name|default:enrollment.student.username }}</div>
+                                        <small class="text-muted">{{ enrollment.student.email }}</small>
+                                    </td>
+                                    <td style="max-width: 220px;">
+                                        <select class="form-select attendance-status" name="status_{{ enrollment.student_id }}">
+                                            <option value="present" {% if enrollment.current_status == 'present' %}selected{% endif %}>Present</option>
+                                            <option value="absent" {% if enrollment.current_status == 'absent' %}selected{% endif %}>Absent</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted py-4">No students are enrolled in this class.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </form>
+
+                <div class="mt-5">
+                    <h5 class="mb-3">Recent Attendance History</h5>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Student</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for record in course_history %}
+                                <tr>
+                                    <td>{{ record.date|date:"M d, Y" }}</td>
+                                    <td>{{ record.student.get_full_name|default:record.student.username }}</td>
+                                    <td>
+                                        {% if record.status == 'present' %}
+                                        <span class="badge bg-success">Present</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">Absent</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted py-4">No history available yet.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% else %}
+                <div class="alert alert-info mb-0">Pick a class and date to load attendance.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const markAllPresent = document.getElementById('markAllPresent');
+        const studentSearch = document.getElementById('studentSearch');
+        const attendanceTable = document.getElementById('attendanceTable');
+
+        if (markAllPresent && attendanceTable) {
+            markAllPresent.addEventListener('click', function () {
+                attendanceTable.querySelectorAll('.attendance-status').forEach((select) => {
+                    select.value = 'present';
+                });
+            });
+        }
+
+        if (studentSearch && attendanceTable) {
+            studentSearch.addEventListener('input', function () {
+                const filter = this.value.toLowerCase();
+                attendanceTable.querySelectorAll('tbody tr').forEach((row) => {
+                    row.style.display = row.innerText.toLowerCase().includes(filter) ? '' : 'none';
+                });
+            });
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

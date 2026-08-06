@@ -1,0 +1,100 @@
+{% extends 'navbar.html' %}
+
+{% block title %}Submissions - CampusHub{% endblock %}
+
+{% block content %}
+<div class="container">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'assignments:assignment_list' %}">Assignments</a></li>
+            <li class="breadcrumb-item active">Submissions</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3>Submissions for: {{ assignment.title }}</h3>
+        <a href="{% url 'assignments:assignment_detail' assignment.id %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Assignment
+        </a>
+    </div>
+
+    <!-- Stats -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h2 class="mb-0">{{ total }}</h2>
+                    <p class="text-muted mb-0">Total Submissions</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h2 class="mb-0 text-info">{{ submitted }}</h2>
+                    <p class="text-muted mb-0">Pending Grading</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h2 class="mb-0 text-success">{{ graded }}</h2>
+                    <p class="text-muted mb-0">Graded</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if submissions %}
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Student</th>
+                    <th>Submitted At</th>
+                    <th>Status</th>
+                    <th>Marks</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sub in submissions %}
+                <tr>
+                    <td>
+                        <strong>{{ sub.student.get_full_name }}</strong><br>
+                        <small class="text-muted">{{ sub.student.email }}</small>
+                    </td>
+                    <td>
+                        {{ sub.submitted_at|date:"M d, Y H:i" }}
+                        {% if sub.is_late %}
+                        <span class="badge bg-warning">Late</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="badge bg-{% if sub.status == 'graded' %}success{% elif sub.status == 'submitted' %}info{% else %}secondary{% endif %}">
+                            {{ sub.get_status_display }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if sub.marks_obtained %}
+                            {{ sub.marks_obtained }}/{{ assignment.total_marks }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{% url 'assignments:grade_submission' sub.id %}" class="btn btn-sm btn-{% if sub.status == 'graded' %}outline-primary{% else %}primary{% endif %}">
+                            <i class="bi bi-pencil"></i> {% if sub.status == 'graded' %}View/Edit{% else %}Grade{% endif %}
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="alert alert-info">No submissions yet.</div>
+    {% endif %}
+</div>
+{% endblock %}

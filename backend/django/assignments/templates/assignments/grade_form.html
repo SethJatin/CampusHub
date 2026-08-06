@@ -1,0 +1,87 @@
+{% extends 'navbar.html' %}
+
+{% block title %}Grade Submission - CampusHub{% endblock %}
+
+{% block content %}
+<div class="container">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'assignments:assignment_list' %}">Assignments</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'assignments:view_submissions' submission.assignment.id %}">{{ submission.assignment.title|truncatechars:20 }}</a></li>
+            <li class="breadcrumb-item active">Grade</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4>Grade Submission</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info mb-4">
+                        <strong>Student:</strong> {{ submission.student.get_full_name }}<br>
+                        <strong>Email:</strong> {{ submission.student.email }}<br>
+                        <strong>Submitted:</strong> {{ submission.submitted_at|date:"M d, Y H:i" }}
+                        {% if submission.is_late %}<span class="badge bg-warning ms-2">Late</span>{% endif %}
+                    </div>
+
+                    {% if submission.content %}
+                    <h6>Submission Content:</h6>
+                    <div class="bg-light p-3 mb-4 rounded">
+                        {{ submission.content|linebreaks }}
+                    </div>
+                    {% endif %}
+
+                    {% if submission.attachment %}
+                    <p>
+                        <a href="{{ submission.attachment.url }}" class="btn btn-outline-primary" download>
+                            <i class="bi bi-download"></i> Download Attachment
+                        </a>
+                    </p>
+                    {% endif %}
+
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Marks Obtained</label>
+                                <input type="number" name="marks_obtained" class="form-control"
+                                       value="{{ submission.marks_obtained|default:'' }}"
+                                       min="0" max="{{ submission.assignment.total_marks }}">
+                                <small class="text-muted">Max: {{ submission.assignment.total_marks }}</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Grade</label>
+                                <input type="text" name="grade" class="form-control"
+                                       value="{{ submission.grade|default:'' }}"
+                                       placeholder="e.g., A, B+, C">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Feedback</label>
+                            <textarea name="feedback" class="form-control" rows="4" placeholder="Provide feedback to the student...">{{ submission.feedback|default:'' }}</textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Status</label>
+                            <select name="status" class="form-select">
+                                <option value="submitted" {% if submission.status == 'submitted' %}selected{% endif %}>Submitted</option>
+                                <option value="graded" {% if submission.status == 'graded' %}selected{% endif %}>Graded</option>
+                                <option value="returned" {% if submission.status == 'returned' %}selected{% endif %}>Returned</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-check2"></i> Save Grade
+                        </button>
+                        <a href="{% url 'assignments:view_submissions' submission.assignment.id %}" class="btn btn-secondary">Cancel</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,75 @@
+{% extends 'navbar.html' %}
+
+{% block title %}My Submissions - CampusHub{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2><i class="bi bi-check2-square"></i> My Submissions</h2>
+
+    {% if page_obj %}
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Assignment</th>
+                    <th>Course</th>
+                    <th>Submitted</th>
+                    <th>Status</th>
+                    <th>Marks</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for submission in page_obj %}
+                <tr>
+                    <td>
+                        <a href="{% url 'assignments:assignment_detail' submission.assignment.id %}">
+                            {{ submission.assignment.title }}
+                        </a>
+                    </td>
+                    <td>{{ submission.assignment.course.code }}</td>
+                    <td>{{ submission.submitted_at|date:"M d, Y H:i" }}</td>
+                    <td>
+                        <span class="badge bg-{% if submission.status == 'graded' %}success{% elif submission.status == 'submitted' %}info{% else %}secondary{% endif %}">
+                            {{ submission.get_status_display }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if submission.marks_obtained %}
+                            {{ submission.marks_obtained }}/{{ submission.assignment.total_marks }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{% url 'assignments:assignment_detail' submission.assignment.id %}" class="btn btn-sm btn-outline-primary">
+                            View
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if page_obj.has_other_pages %}
+    <nav>
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item"><a class="page-link" href="?page=1">First</a></li>
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a></li>
+            {% endif %}
+            <li class="page-item active"><span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
+            {% if page_obj.has_next %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a></li>
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+
+    {% else %}
+    <div class="alert alert-info">You haven't submitted any assignments yet.</div>
+    {% endif %}
+</div>
+{% endblock %}

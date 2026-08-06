@@ -1,0 +1,102 @@
+{% extends 'navbar.html' %}
+
+{% block title %}{{ action }} Assignment - CampusHub{% endblock %}
+
+{% block content %}
+<div class="container">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'assignments:assignment_list' %}">Assignments</a></li>
+            <li class="breadcrumb-item active">{{ action }} Assignment</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4>{{ action }} Assignment</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+                            <label class="form-label">Course</label>
+                            <select name="course" class="form-select" required>
+                                <option value="">Select Course</option>
+                                {% for course in courses %}
+                                <option value="{{ course.id }}" {% if assignment.course.id == course.id %}selected{% endif %}>
+                                    {{ course.code }} - {{ course.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Title</label>
+                            <input type="text" name="title" class="form-control" value="{{ assignment.title|default:'' }}" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea name="description" class="form-control" rows="4" required>{{ assignment.description|default:'' }}</textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Instructions (optional)</label>
+                            <textarea name="instructions" class="form-control" rows="3">{{ assignment.instructions|default:'' }}</textarea>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Due Date</label>
+                                <input type="datetime-local" name="due_date" class="form-control" value="{{ assignment.due_date|date:'Y-m-d\TH:i'|default:'' }}" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Total Marks</label>
+                                <input type="number" name="total_marks" class="form-control" value="{{ assignment.total_marks|default:100 }}" required>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check">
+                                    <input type="checkbox" name="allow_late_submission" class="form-check-input" id="lateCheck" {% if assignment.allow_late_submission %}checked{% endif %}>
+                                    <label class="form-check-label" for="lateCheck">Allow Late Submission</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Late Penalty (%)</label>
+                                <input type="number" name="late_penalty_percent" class="form-control" value="{{ assignment.late_penalty_percent|default:10 }}">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Status</label>
+                            <select name="status" class="form-select">
+                                <option value="draft" {% if assignment.status == 'draft' %}selected{% endif %}>Draft</option>
+                                <option value="published" {% if assignment.status == 'published' %}selected{% endif %}>Published</option>
+                                <option value="closed" {% if assignment.status == 'closed' %}selected{% endif %}>Closed</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Attachment (optional)</label>
+                            <input type="file" name="attachment" class="form-control">
+                            {% if assignment.attachment %}
+                            <small class="text-muted">Current: <a href="{{ assignment.attachment.url }}">{{ assignment.attachment.name }}</a></small>
+                            {% endif %}
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save"></i> Save Assignment
+                        </button>
+                        <a href="{% url 'assignments:assignment_list' %}" class="btn btn-secondary">Cancel</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

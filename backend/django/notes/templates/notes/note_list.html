@@ -1,0 +1,80 @@
+{% extends 'navbar.html' %}
+
+{% block title %}Notes - CampusHub{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-journal-bookmark"></i> Study Notes</h2>
+        {% if user.is_authenticated %}
+        <a href="{% url 'notes:upload_note' %}" class="btn btn-primary">
+            <i class="bi bi-upload"></i> Upload Note
+        </a>
+        {% endif %}
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <select name="course" class="form-select">
+                        <option value="">All Courses</option>
+                        <!-- Add courses -->
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select name="type" class="form-select">
+                        <option value="">All Types</option>
+                        <option value="notes">Class Notes</option>
+                        <option value="summary">Summary</option>
+                        <option value="cheatsheet">Cheat Sheet</option>
+                        <option value="question_paper">Question Paper</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-outline-primary w-100">Filter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if page_obj %}
+    <div class="row">
+        {% for note in page_obj %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <span class="badge bg-secondary">{{ note.get_note_type_display }}</span>
+                    <h5 class="card-title mt-2">{{ note.title }}</h5>
+                    <p class="card-text text-muted small">{{ note.description|truncatechars:80 }}</p>
+                    <p class="mb-1"><small><strong>Course:</strong> {{ note.course.code }}</small></p>
+                    <p class="mb-1"><small><i class="bi bi-eye"></i> {{ note.views }} views</small></p>
+                    <p class="mb-0"><small><i class="bi bi-download"></i> {{ note.downloads }} downloads</small></p>
+                </div>
+                <div class="card-footer bg-transparent">
+                    <a href="{% url 'notes:note_detail' note.id %}" class="btn btn-sm btn-outline-primary">View</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if page_obj.has_other_pages %}
+    <nav class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a></li>
+            {% endif %}
+            <li class="page-item active"><span class="page-link">Page {{ page_obj.number }}</span></li>
+            {% if page_obj.has_next %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+
+    {% else %}
+    <div class="alert alert-info">No notes found.</div>
+    {% endif %}
+</div>
+{% endblock %}
