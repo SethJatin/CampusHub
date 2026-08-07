@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
 
     # Third-party apps
+    "corsheaders",
     "rest_framework",
     "rest_framework_simplejwt",
     "crispy_forms",
@@ -39,8 +40,6 @@ INSTALLED_APPS = [
     "debug_toolbar",
     "django_extensions",
     "drf_spectacular",
-
-    # Local apps - Core modules
     "accounts",
     "courses",
     "assignments",
@@ -51,6 +50,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -155,6 +155,13 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 10,
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
+
+
+# ============================================================
+# CORS Configuration (Headless REST API)
+# ============================================================
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
 
 
 # ============================================================
