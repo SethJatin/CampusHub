@@ -110,7 +110,9 @@ def train_and_evaluate():
     y = df['is_at_risk']
 
     # Train / Test split
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y if len(np.unique(y)) > 1 else None)
+    can_stratify = len(np.unique(y)) > 1 and np.min(np.bincount(y)) >= 2
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y if can_stratify else None)
+
 
     scaler = StandardScaler()
     X_train_scaled = scaler.fit_transform(X_train)

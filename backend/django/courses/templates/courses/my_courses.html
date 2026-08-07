@@ -22,8 +22,14 @@
                     <div class="card-body">
                         <h5>{{ enrollment.course.code }} - {{ enrollment.course.name }}</h5>
                         <p class="text-muted mb-1">{{ enrollment.course.instructor|default:"TBA" }}</p>
-                        <div class="d-flex justify-content-between">
-                            <span class="badge bg-success">{{ enrollment.status|title }}</span>
+                        <div class="d-flex justify-content-between align-items-center">
+                            {% if enrollment.status == 'approved' %}
+                                <button class="btn btn-sm btn-success" disabled>Enrolled</button>
+                            {% elif enrollment.status == 'pending' %}
+                                <button class="btn btn-sm btn-warning" disabled>Requested</button>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ enrollment.status|title }}</span>
+                            {% endif %}
                             <span class="badge bg-info">{{ enrollment.course.credits }} Credits</span>
                         </div>
                         <hr>

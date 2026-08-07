@@ -94,7 +94,8 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 class LoginSerializer(serializers.Serializer):
     """
-    Serializer for login.
+    Serializer for login. Supports email, username, roll number, or employee ID.
     """
-    email = serializers.EmailField()
+    email = serializers.CharField()
     password = serializers.CharField()
+

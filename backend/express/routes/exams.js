@@ -44,7 +44,7 @@ router.get('/', authenticateToken, async (req, res) => {
     const { course_id } = req.query;
     try {
         let sql = `
-            SELECT e.*, c.code as course_code, c.name as course_name,
+            SELECT e.*, c.code as course_code, c.name as course_name, c.instructor_id,
                    u.first_name as instructor_first_name, u.last_name as instructor_last_name,
                    (SELECT COUNT(*) FROM courses_examquestion eq WHERE eq.exam_id = e.id) as total_questions,
                    em.marks_obtained as student_marks, em.remarks as student_remarks
@@ -54,10 +54,23 @@ router.get('/', authenticateToken, async (req, res) => {
             LEFT JOIN courses_exammark em ON em.exam_id = e.id AND em.student_id = ?
         `;
         const params = [req.user.id];
+        const whereConditions = [];
 
         if (course_id) {
-            sql += ` WHERE e.course_id = ?`;
+            whereConditions.push('e.course_id = ?');
             params.push(course_id);
+        }
+
+        if (req.user.role === 'student') {
+            whereConditions.push(`e.course_id IN (SELECT course_id FROM courses_enrollment WHERE student_id = ? AND status = 'approved')`);
+            params.push(req.user.id);
+        } else if (req.user.role === 'faculty') {
+            whereConditions.push(`c.instructor_id = ?`);
+            params.push(req.user.id);
+        }
+
+        if (whereConditions.length > 0) {
+            sql += ` WHERE ` + whereConditions.join(' AND ');
         }
 
         sql += ` ORDER BY e.exam_date ASC`;
@@ -79,13 +92,20 @@ router.get('/', authenticateToken, async (req, res) => {
 router.get('/:id', authenticateToken, async (req, res) => {
     try {
         const exam = await db.get(`
-            SELECT e.*, c.code as course_code, c.name as course_name
+            SELECT e.*, c.code as course_code, c.name as course_name, c.instructor_id
             FROM courses_exam e
             JOIN courses_course c ON e.course_id = c.id
             WHERE e.id = ?
         `, [req.params.id]);
 
         if (!exam) return res.status(404).json({ error: 'Exam not found' });
+
+        if (req.user.role === 'student') {
+            const enr = await db.get('SELECT * FROM courses_enrollment WHERE student_id = ? AND course_id = ? AND status = "approved"', [req.user.id, exam.course_id]);
+            if (!enr) return res.status(403).json({ error: 'Access denied: You are not enrolled in this course' });
+        } else if (req.user.role === 'faculty' && exam.instructor_id !== req.user.id) {
+            return res.status(403).json({ error: 'Access denied: You are not the instructor of this course' });
+        }
 
         const questions = await db.query(`
             SELECT id, question_text, option_a, option_b, option_c, option_d, marks
@@ -120,6 +140,13 @@ router.post('/', authenticateToken, authorizeRoles('admin', 'faculty'), async (r
         return res.status(400).json({ error: 'Course, exam title, and exam date are required' });
     }
     try {
+        const course = await db.get('SELECT * FROM courses_course WHERE id = ?', [course_id]);
+        if (!course) return res.status(404).json({ error: 'Course not found' });
+
+        if (req.user.role === 'faculty' && course.instructor_id !== req.user.id) {
+            return res.status(403).json({ error: 'Access denied: You can only publish exams for your assigned courses' });
+        }
+
         const dateNow = new Date().toISOString();
         const examRes = await db.run(`
             INSERT INTO courses_exam (
@@ -156,6 +183,9 @@ router.post('/:id/submit', authenticateToken, authorizeRoles('student'), async (
     try {
         const exam = await db.get('SELECT * FROM courses_exam WHERE id = ?', [req.params.id]);
         if (!exam) return res.status(404).json({ error: 'Exam not found' });
+
+        const enr = await db.get('SELECT * FROM courses_enrollment WHERE student_id = ? AND course_id = ? AND status = "approved"', [req.user.id, exam.course_id]);
+        if (!enr) return res.status(403).json({ error: 'Access denied: You are not enrolled in this course' });
 
         const existingSub = await db.get('SELECT * FROM courses_examsubmission WHERE exam_id = ? AND student_id = ?', [req.params.id, req.user.id]);
         if (existingSub) return res.status(400).json({ error: 'Exam already submitted' });
@@ -198,8 +228,12 @@ router.post('/:id/submit', authenticateToken, authorizeRoles('student'), async (
 // 5. Get Enrolled Students for Mark Entry (Faculty/Admin)
 router.get('/:id/students', authenticateToken, authorizeRoles('admin', 'faculty'), async (req, res) => {
     try {
-        const exam = await db.get('SELECT * FROM courses_exam WHERE id = ?', [req.params.id]);
+        const exam = await db.get('SELECT e.*, c.instructor_id FROM courses_exam e JOIN courses_course c ON e.course_id = c.id WHERE e.id = ?', [req.params.id]);
         if (!exam) return res.status(404).json({ error: 'Exam not found' });
+
+        if (req.user.role === 'faculty' && exam.instructor_id !== req.user.id) {
+            return res.status(403).json({ error: 'Access denied: You are not the instructor for this course' });
+        }
 
         const lockStatus = getMarksLockStatus(exam);
         if (lockStatus.is_locked) {
@@ -236,8 +270,12 @@ router.post('/:id/marks', authenticateToken, authorizeRoles('admin', 'faculty'),
         return res.status(400).json({ error: 'No mark records provided' });
     }
     try {
-        const exam = await db.get('SELECT * FROM courses_exam WHERE id = ?', [req.params.id]);
+        const exam = await db.get('SELECT e.*, c.instructor_id FROM courses_exam e JOIN courses_course c ON e.course_id = c.id WHERE e.id = ?', [req.params.id]);
         if (!exam) return res.status(404).json({ error: 'Exam not found' });
+
+        if (req.user.role === 'faculty' && exam.instructor_id !== req.user.id) {
+            return res.status(403).json({ error: 'Access denied: You are not the instructor for this course' });
+        }
 
         const lockStatus = getMarksLockStatus(exam);
         if (lockStatus.is_locked) {
@@ -276,7 +314,11 @@ router.post('/:id/marks', authenticateToken, authorizeRoles('admin', 'faculty'),
 
 // 7. Student Personal Growth Analytics
 router.get('/growth/student/:student_id', authenticateToken, async (req, res) => {
-    const studentId = req.params.student_id;
+    const studentId = parseInt(req.params.student_id, 10);
+    if (req.user.role === 'student' && req.user.id !== studentId) {
+        return res.status(403).json({ error: 'Access denied: Cannot view another student growth analytics' });
+    }
+
     try {
         // Marks history trend
         const history = await db.query(`
@@ -342,6 +384,13 @@ router.get('/growth/student/:student_id', authenticateToken, async (req, res) =>
 // 8. Faculty / Overall Growth Analytics
 router.get('/growth/faculty-overview', authenticateToken, authorizeRoles('admin', 'faculty'), async (req, res) => {
     try {
+        let whereClause = '';
+        const params = [];
+        if (req.user.role === 'faculty') {
+            whereClause = ' WHERE c.instructor_id = ? ';
+            params.push(req.user.id);
+        }
+
         // Course averages
         const courseStats = await db.query(`
             SELECT c.id as course_id, c.code as course_code, c.name as course_name,
@@ -354,13 +403,17 @@ router.get('/growth/faculty-overview', authenticateToken, authorizeRoles('admin'
             LEFT JOIN accounts_user u ON c.instructor_id = u.id
             LEFT JOIN courses_exam e ON e.course_id = c.id
             LEFT JOIN courses_exammark em ON em.exam_id = e.id
+            ${whereClause}
             GROUP BY c.id
-        `);
+        `, params);
 
-        // Overall average across all courses
-        const overallRes = await db.get(`
-            SELECT AVG((marks_obtained / total_marks) * 100) as overall_avg FROM courses_exammark
-        `);
+        // Overall average across faculty's courses
+        let overallSql = 'SELECT AVG((marks_obtained / total_marks) * 100) as overall_avg FROM courses_exammark em JOIN courses_exam e ON em.exam_id = e.id JOIN courses_course c ON e.course_id = c.id';
+        if (req.user.role === 'faculty') {
+            overallSql += ' WHERE c.instructor_id = ?';
+        }
+
+        const overallRes = await db.get(overallSql, req.user.role === 'faculty' ? [req.user.id] : []);
 
         res.status(200).json({
             overall_average: Math.round(overallRes?.overall_avg || 0),
@@ -372,7 +425,7 @@ router.get('/growth/faculty-overview', authenticateToken, authorizeRoles('admin'
                 class_average: Math.round(cs.class_avg_pct || 0),
                 highest_score: Math.round(cs.max_pct || 0),
                 lowest_score: Math.round(cs.min_pct || 0),
-                student_count: cs.student_count || 15
+                student_count: cs.student_count || 0
             }))
         });
     } catch (err) {

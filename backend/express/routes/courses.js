@@ -80,6 +80,77 @@ router.get('/my-courses', authenticateToken, async (req, res) => {
     }
 });
 
+// 5. GET STUDENT ENROLLMENT STATUSES
+router.get('/my-enrollment-status', authenticateToken, authorizeRoles('student'), async (req, res) => {
+    try {
+        const enrollments = await db.query(`
+            SELECT e.id AS enrollment_id, e.course_id, e.status, e.enrollment_date, e.approved_date
+            FROM courses_enrollment e
+            WHERE e.student_id = ?
+        `, [req.user.id]);
+        res.status(200).json(enrollments);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// 6. GET PENDING ENROLLMENT APPROVAL REQUESTS (Faculty/Admin)
+router.get('/pending-approvals', authenticateToken, authorizeRoles('admin', 'faculty'), async (req, res) => {
+    try {
+        let query = `
+            SELECT 
+                e.id AS enrollment_id,
+                e.enrollment_date,
+                e.status,
+                c.id AS course_id,
+                c.code AS course_code,
+                c.name AS course_name,
+                c.instructor_id,
+                inst.first_name AS instructor_first_name,
+                inst.last_name AS instructor_last_name,
+                inst.email AS instructor_email,
+                u.id AS student_id,
+                u.first_name,
+                u.last_name,
+                u.email,
+                sp.roll_number,
+                sp.enrollment_number,
+                sp.department,
+                sp.year,
+                sp.semester,
+                sp.cgpa,
+                sp.parent_name,
+                sp.parent_phone
+            FROM courses_enrollment e
+            JOIN courses_course c ON e.course_id = c.id
+            JOIN accounts_user u ON e.student_id = u.id
+            LEFT JOIN accounts_user inst ON c.instructor_id = inst.id
+            LEFT JOIN accounts_studentprofile sp ON u.id = sp.user_id
+            WHERE e.status = 'pending'
+        `;
+
+        const params = [];
+        if (req.user.role === 'faculty') {
+            query += ` AND c.instructor_id = ? `;
+            params.push(req.user.id);
+        }
+
+        query += ` ORDER BY e.enrollment_date DESC `;
+
+        const pendingRequests = await db.query(query, params);
+        const result = pendingRequests.map(r => ({
+            ...r,
+            is_my_course: r.instructor_id === req.user.id || req.user.role === 'admin'
+        }));
+
+        res.status(200).json(result);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
 // 4. GET COURSE BY ID
 router.get('/:id', authenticateToken, async (req, res) => {
     try {
@@ -95,7 +166,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
     }
 });
 
-// 5. ENROLL IN COURSE (Student)
+// 7. ENROLL IN COURSE (Student)
 router.post('/enroll', authenticateToken, authorizeRoles('student'), async (req, res) => {
     const { course_id } = req.body;
     if (!course_id) {
@@ -110,30 +181,53 @@ router.post('/enroll', authenticateToken, authorizeRoles('student'), async (req,
 
         // Check existing enrollment
         const existing = await db.get('SELECT * FROM courses_enrollment WHERE student_id = ? AND course_id = ?', [req.user.id, course_id]);
+        const date = new Date().toISOString();
+
         if (existing) {
-            return res.status(400).json({ error: 'Already requested or enrolled in this course' });
+            if (existing.status === 'approved') {
+                return res.status(400).json({ error: 'You are already enrolled in this course' });
+            }
+            if (existing.status === 'pending') {
+                return res.status(400).json({ error: 'Enrollment request is currently pending faculty approval' });
+            }
+            // If rejected previously, allow re-submitting request
+            await db.run(`
+                UPDATE courses_enrollment
+                SET status = 'pending', enrollment_date = ?, approved_by_id = NULL, approved_date = NULL
+                WHERE id = ?
+            `, [date, existing.id]);
+            return res.status(200).json({ message: 'Enrollment request resubmitted for faculty approval' });
         }
 
-        const date = new Date().toISOString();
         await db.run(`
-      INSERT INTO courses_enrollment (student_id, course_id, status, enrollment_date, grade, marks)
-      VALUES (?, ?, 'pending', ?, '', 0.0)
-    `, [req.user.id, course_id, date]);
+            INSERT INTO courses_enrollment (student_id, course_id, status, enrollment_date, grade, marks)
+            VALUES (?, ?, 'pending', ?, '', 0.0)
+        `, [req.user.id, course_id, date]);
 
-        res.status(201).json({ message: 'Enrollment requested successfully' });
+        res.status(201).json({ message: 'Enrollment requested successfully and sent to faculty for approval' });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });
 
-// 6. APPROVE/REJECT ENROLLMENT (Faculty/Admin)
+// 8. APPROVE/REJECT ENROLLMENT (Faculty/Admin)
 router.post('/enrollments/:enrollment_id/approve', authenticateToken, authorizeRoles('admin', 'faculty'), async (req, res) => {
     try {
-        const enrollment = await db.get('SELECT * FROM courses_enrollment WHERE id = ?', [req.params.enrollment_id]);
+        const enrollment = await db.get(`
+            SELECT e.*, c.instructor_id 
+            FROM courses_enrollment e
+            JOIN courses_course c ON e.course_id = c.id
+            WHERE e.id = ?
+        `, [req.params.enrollment_id]);
+
         if (!enrollment) {
             return res.status(404).json({ error: 'Enrollment record not found' });
         }
+        if (req.user.role === 'faculty' && enrollment.instructor_id !== req.user.id) {
+            return res.status(403).json({ error: 'You can only approve enrollments for your assigned courses' });
+        }
+
         const approved_date = new Date().toISOString();
         await db.run(`
       UPDATE courses_enrollment
@@ -141,7 +235,7 @@ router.post('/enrollments/:enrollment_id/approve', authenticateToken, authorizeR
       WHERE id = ?
     `, [req.user.id, approved_date, req.params.enrollment_id]);
 
-        res.status(200).json({ message: 'Enrollment approved' });
+        res.status(200).json({ message: 'Enrollment approved successfully' });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Internal Server Error' });
@@ -150,10 +244,20 @@ router.post('/enrollments/:enrollment_id/approve', authenticateToken, authorizeR
 
 router.post('/enrollments/:enrollment_id/reject', authenticateToken, authorizeRoles('admin', 'faculty'), async (req, res) => {
     try {
-        const enrollment = await db.get('SELECT * FROM courses_enrollment WHERE id = ?', [req.params.enrollment_id]);
+        const enrollment = await db.get(`
+            SELECT e.*, c.instructor_id 
+            FROM courses_enrollment e
+            JOIN courses_course c ON e.course_id = c.id
+            WHERE e.id = ?
+        `, [req.params.enrollment_id]);
+
         if (!enrollment) {
             return res.status(404).json({ error: 'Enrollment record not found' });
         }
+        if (req.user.role === 'faculty' && enrollment.instructor_id !== req.user.id) {
+            return res.status(403).json({ error: 'You can only reject enrollments for your assigned courses' });
+        }
+
         const approved_date = new Date().toISOString();
         await db.run(`
       UPDATE courses_enrollment
@@ -161,7 +265,7 @@ router.post('/enrollments/:enrollment_id/reject', authenticateToken, authorizeRo
       WHERE id = ?
     `, [req.user.id, approved_date, req.params.enrollment_id]);
 
-        res.status(200).json({ message: 'Enrollment rejected' });
+        res.status(200).json({ message: 'Enrollment rejected successfully' });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Internal Server Error' });

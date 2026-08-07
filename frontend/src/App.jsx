@@ -815,6 +815,11 @@ function StudentDashboard() {
         </div>
       </div>
 
+      {/* 24-Hour Assignment Reminder Banner */}
+      <div style={{ marginTop: '25px' }}>
+        <AssignmentRemindersWidget token={token} />
+      </div>
+
       {/* AI Risk Assessment Widget */}
       <AIStudentRiskWidget userId={user?.id} token={token} />
     </div>
@@ -891,6 +896,11 @@ function FacultyDashboard() {
         </div>
       </div>
 
+      {/* Pending Enrollment Requests Panel for Faculty */}
+      <div style={{ marginTop: '30px' }}>
+        <PendingEnrollmentsPanel token={token} />
+      </div>
+
       {/* AI Model Benchmarks & Risk Radar Panel */}
       <AIRiskAnalysisPanel token={token} />
     </div>
@@ -937,8 +947,150 @@ function AdminDashboard() {
         </a>
       </div>
 
+      <div style={{ marginTop: '30px' }}>
+        <PendingEnrollmentsPanel token={token} />
+      </div>
+
       {/* AI Model Benchmarks & Risk Radar Panel */}
       <AIRiskAnalysisPanel token={token} />
+    </div>
+  );
+}
+
+// Pending Enrollment Requests Approval Panel for Faculty & Admin
+function PendingEnrollmentsPanel({ token, onStatusChange }) {
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState('');
+
+  const fetchPendingRequests = () => {
+    if (!token) return;
+    fetch('/api/courses/pending-approvals', { headers: { 'Authorization': `Bearer ${token}` } })
+      .then(res => res.json())
+      .then(data => setRequests(Array.isArray(data) ? data : []))
+      .catch(() => setRequests([]))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchPendingRequests();
+  }, [token]);
+
+  const handleAction = async (enrollmentId, action) => {
+    try {
+      const res = await fetch(`/api/courses/enrollments/${enrollmentId}/${action}`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setMessage(`✅ ${data.message || 'Request updated successfully'}`);
+        setTimeout(() => setMessage(''), 4000);
+        fetchPendingRequests();
+        if (onStatusChange) onStatusChange();
+      } else {
+        alert(data.error || 'Failed to update enrollment request');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error updating enrollment request');
+    }
+  };
+
+  if (loading) return null;
+
+  return (
+    <div className="glass-panel" style={{ padding: '25px', marginBottom: '30px', borderLeft: '4px solid #facc15' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+        <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+          🔔 Pending Course Enrollment Approval Requests
+        </h3>
+        <span className="badge badge-warning" style={{ fontSize: '0.85rem', padding: '4px 12px' }}>
+          {requests.length} Pending
+        </span>
+      </div>
+
+      {message && (
+        <div style={{ color: '#10b981', padding: '10px 14px', background: 'rgba(16,185,129,0.15)', borderRadius: '8px', marginBottom: '15px', fontSize: '0.9rem' }}>
+          {message}
+        </div>
+      )}
+
+      {requests.length === 0 ? (
+        <p style={{ color: 'var(--text-secondary)', margin: 0, fontSize: '0.9rem' }}>
+          No pending student enrollment requests for assigned courses at this time.
+        </p>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+          {requests.map((req) => (
+            <div
+              key={req.enrollment_id}
+              className="glass-panel"
+              style={{
+                padding: '18px',
+                background: 'rgba(255, 255, 255, 0.02)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                display: 'flex',
+                justify: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '15px'
+              }}
+            >
+              <div style={{ flex: 1, minWidth: '280px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                  <strong style={{ fontSize: '1.05rem', color: '#fff' }}>
+                    {req.first_name} {req.last_name}
+                  </strong>
+                  <span className="badge badge-info" style={{ fontSize: '0.75rem' }}>
+                    Roll: {req.roll_number || 'N/A'}
+                  </span>
+                  <span className="badge badge-secondary" style={{ fontSize: '0.75rem', background: 'rgba(255,255,255,0.1)', color: '#e2e8f0' }}>
+                    Enr: {req.enrollment_number || 'N/A'}
+                  </span>
+                  {req.is_my_course && (
+                    <span className="badge badge-success" style={{ fontSize: '0.75rem', background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.4)' }}>
+                      ⭐ Your Course
+                    </span>
+                  )}
+                </div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'flex', gap: '15px', flexWrap: 'wrap', marginTop: '4px' }}>
+                  <span>📧 {req.email}</span>
+                  <span>🏛️ {req.department || 'CS'} (Year {req.year || 1}, Sem {req.semester || 1})</span>
+                  <span>🎓 CGPA: <strong style={{ color: '#38bdf8' }}>{req.cgpa || 'N/A'}</strong></span>
+                </div>
+                <div style={{ marginTop: '8px', fontSize: '0.85rem', display: 'flex', gap: '15px', flexWrap: 'wrap', alignItems: 'center' }}>
+                  <span>Requested Course: <strong style={{ color: '#a855f7' }}>[{req.course_code}] {req.course_name}</strong></span>
+                  {req.instructor_first_name && (
+                    <span style={{ color: 'var(--text-secondary)' }}>
+                      👨‍🏫 Instructor: <strong>Prof. {req.instructor_first_name} {req.instructor_last_name}</strong> ({req.instructor_email})
+                    </span>
+                  )}
+                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
+                    📅 {new Date(req.enrollment_date).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button
+                  onClick={() => handleAction(req.enrollment_id, 'approve')}
+                  className="glow-button"
+                  style={{ background: '#10b981', color: '#fff', border: 'none', padding: '8px 16px', fontSize: '0.85rem', cursor: 'pointer', borderRadius: '8px' }}
+                >
+                  ✅ Approve
+                </button>
+                <button
+                  onClick={() => handleAction(req.enrollment_id, 'reject')}
+                  style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.4)', padding: '8px 16px', fontSize: '0.85rem', cursor: 'pointer', borderRadius: '8px', fontWeight: 'bold' }}
+                >
+                  ❌ Reject
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -948,6 +1100,7 @@ function Courses() {
   const { token, user } = useAuth();
   const [courses, setCourses] = useState([]);
   const [myCourses, setMyCourses] = useState([]);
+  const [myEnrollments, setMyEnrollments] = useState([]);
   const [code, setCode] = useState('');
   const [name, setName] = useState('');
   const [descr, setDescr] = useState('');
@@ -964,6 +1117,13 @@ function Courses() {
       .then(res => res.json())
       .then(data => setMyCourses(Array.isArray(data) ? data : []))
       .catch(() => setMyCourses([]));
+
+    if (user.role === 'student') {
+      fetch('/api/courses/my-enrollment-status', { headers: { 'Authorization': `Bearer ${token}` } })
+        .then(res => res.json())
+        .then(data => setMyEnrollments(Array.isArray(data) ? data : []))
+        .catch(() => setMyEnrollments([]));
+    }
   };
 
   useEffect(() => {
@@ -984,13 +1144,20 @@ function Courses() {
   };
 
   const handleEnroll = async (courseId) => {
-    const res = await fetch('/api/courses/enroll', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({ course_id: courseId })
-    });
-    if (res.ok) {
-      alert('Enrollment requested details!');
+    // Optimistically set enrollment status to 'pending'
+    setMyEnrollments(prev => [
+      ...prev.filter(e => Number(e.course_id) !== Number(courseId)),
+      { course_id: Number(courseId), status: 'pending' }
+    ]);
+    try {
+      await fetch('/api/courses/enroll', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ course_id: Number(courseId) })
+      });
+      fetchCourses();
+    } catch (err) {
+      console.error(err);
       fetchCourses();
     }
   };
@@ -999,6 +1166,10 @@ function Courses() {
     <div>
       <h2>📚 Class Courses Management</h2>
       <p style={{ color: 'var(--text-secondary)', marginBottom: '30px' }}>Register course curriculum structure and request class enrollment.</p>
+
+      {(user.role === 'faculty' || user.role === 'admin') && (
+        <PendingEnrollmentsPanel token={token} onStatusChange={fetchCourses} />
+      )}
 
       {user.role === 'faculty' && (
         <div className="glass-panel" style={{ padding: '25px', marginBottom: '30px' }}>
@@ -1023,22 +1194,65 @@ function Courses() {
               <th>Name</th>
               <th>Department</th>
               <th>Semester</th>
-              <th>Action</th>
+              <th>Action / Status</th>
             </tr>
           </thead>
           <tbody>
             {courses.map((c, i) => {
-              const enrolled = myCourses.some(mc => mc.id === c.id);
+              const enr = myEnrollments.find(e => Number(e.course_id) === Number(c.id));
+              const isEnrolledInMyCourses = myCourses.some(mc => Number(mc.id) === Number(c.id));
+              const status = enr ? enr.status : (isEnrolledInMyCourses ? 'approved' : null);
+
               return (
                 <tr key={i}>
-                  <td>{c.code}</td>
+                  <td><strong>{c.code}</strong></td>
                   <td>{c.name}</td>
                   <td>{c.department}</td>
                   <td>Sem {c.semester}</td>
                   <td>
                     {user.role === 'student' ? (
-                      enrolled ? <span className="badge badge-success">Enrolled</span> :
+                      status === 'approved' ? (
+                        <button
+                          disabled
+                          style={{
+                            background: 'rgba(16, 185, 129, 0.2)',
+                            color: '#34d399',
+                            border: '1px solid rgba(16, 185, 129, 0.4)',
+                            padding: '6px 14px',
+                            fontSize: '0.8rem',
+                            borderRadius: '6px',
+                            fontWeight: 'bold',
+                            cursor: 'not-allowed',
+                            opacity: 0.85
+                          }}
+                        >
+                          Enrolled
+                        </button>
+                      ) : status === 'pending' ? (
+                        <button
+                          disabled
+                          style={{
+                            background: 'rgba(234, 179, 8, 0.2)',
+                            color: '#facc15',
+                            border: '1px solid rgba(234, 179, 8, 0.4)',
+                            padding: '6px 14px',
+                            fontSize: '0.8rem',
+                            borderRadius: '6px',
+                            fontWeight: 'bold',
+                            cursor: 'not-allowed',
+                            opacity: 0.85
+                          }}
+                        >
+                          Requested
+                        </button>
+                      ) : status === 'rejected' ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span className="badge badge-danger">Rejected</span>
+                          <button onClick={() => handleEnroll(c.id)} className="glow-button" style={{ padding: '4px 10px', fontSize: '0.75rem' }}>Re-apply</button>
+                        </div>
+                      ) : (
                         <button onClick={() => handleEnroll(c.id)} className="glow-button" style={{ padding: '6px 12px', fontSize: '0.8rem', borderRadius: '6px' }}>Enroll</button>
+                      )
                     ) : (
                       <span className="badge badge-info">Instructor Active</span>
                     )}
@@ -1510,24 +1724,93 @@ function Attendance() {
   );
 }
 
+// 24-Hour Urgent Assignment Submission Reminder Widget
+function AssignmentRemindersWidget({ token }) {
+  const [reminders, setReminders] = useState([]);
+
+  useEffect(() => {
+    if (!token) return;
+    fetch('/api/assignments/reminders', { headers: { 'Authorization': `Bearer ${token}` } })
+      .then(res => res.json())
+      .then(data => setReminders(Array.isArray(data) ? data : []))
+      .catch(() => setReminders([]));
+  }, [token]);
+
+  if (reminders.length === 0) return null;
+
+  return (
+    <div className="glass-panel" style={{ padding: '20px 25px', marginBottom: '25px', borderLeft: '5px solid #ef4444', background: 'rgba(239, 68, 68, 0.08)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+        <h3 style={{ margin: 0, color: '#f87171', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.1rem' }}>
+          ⏰ URGENT ASSIGNMENT REMINDER ({reminders.length})
+        </h3>
+        <span className="badge badge-danger">Due in less than 24 hours!</span>
+      </div>
+      <p style={{ margin: '8px 0 15px 0', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+        You have unsubmitted homework tasks due within 24 hours. Please upload your completed work before the deadline.
+      </p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        {reminders.map((r, idx) => (
+          <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.2)', padding: '10px 15px', borderRadius: '8px', flexWrap: 'wrap', gap: '10px' }}>
+            <div>
+              <strong style={{ color: '#fff' }}>[{r.course_code}] {r.title}</strong>
+              <div style={{ fontSize: '0.8rem', color: '#fb7185', marginTop: '3px' }}>
+                ⏳ Deadline: {new Date(r.due_date).toLocaleString()}
+              </div>
+            </div>
+            <Link to="/assignments" className="glow-button" style={{ padding: '6px 14px', fontSize: '0.8rem', textDecoration: 'none' }}>
+              Complete & Upload
+            </Link>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // 8. ASSIGNMENTS VIEW
 function Assignments() {
   const { token, user } = useAuth();
   const [assignments, setAssignments] = useState([]);
+  const [mySubmissions, setMySubmissions] = useState([]);
+  const [facultySubmissions, setFacultySubmissions] = useState([]);
   const [courses, setCourses] = useState([]);
+  const [selectedAssignForGrade, setSelectedAssignForGrade] = useState('');
 
-  // Create fields
+  // Homework creation fields (Faculty)
   const [courseId, setCourseId] = useState('');
   const [title, setTitle] = useState('');
   const [descr, setDescr] = useState('');
   const [due, setDue] = useState('');
   const [marks, setMarks] = useState(100);
 
+  // Homework submission fields (Student)
+  const [submittingAssign, setSubmittingAssign] = useState(null);
+  const [submissionText, setSubmissionText] = useState('');
+  const [submissionFile, setSubmissionFile] = useState(null);
+  const [submittingLoader, setSubmittingLoader] = useState(false);
+  const [subMsg, setSubMsg] = useState('');
+
+  // Faculty grading state
+  const [gradingState, setGradingState] = useState({});
+
   const fetchAssignments = () => {
     fetch('/api/assignments', { headers: { 'Authorization': `Bearer ${token}` } })
       .then(res => res.json())
       .then(data => setAssignments(Array.isArray(data) ? data : []))
       .catch(() => setAssignments([]));
+
+    fetch('/api/submissions', { headers: { 'Authorization': `Bearer ${token}` } })
+      .then(res => res.json())
+      .then(data => {
+        const list = Array.isArray(data) ? data : [];
+        if (user.role === 'student') setMySubmissions(list);
+        else setFacultySubmissions(list);
+      })
+      .catch(() => {
+        setMySubmissions([]);
+        setFacultySubmissions([]);
+      });
   };
 
   useEffect(() => {
@@ -1553,29 +1836,105 @@ function Assignments() {
     }
   };
 
-  const handleSubmitAssign = async (assignId) => {
-    const content = prompt("Enter submission links or write solution text:");
-    if (!content) return;
+  const handleOpenSubmitModal = (assign) => {
+    setSubmittingAssign(assign);
+    setSubmissionText('');
+    setSubmissionFile(null);
+    setSubMsg('');
+  };
 
-    const res = await fetch(`/api/assignments/${assignId}/submit`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({ content })
-    });
-    if (res.ok) {
-      alert('Homework submitted successfully!');
-      fetchAssignments();
+  const handleStudentUpload = async (e) => {
+    e.preventDefault();
+    if (!submittingAssign) return;
+    setSubmittingLoader(true);
+    setSubMsg('');
+
+    const formData = new FormData();
+    formData.append('content', submissionText);
+    if (submissionFile) {
+      formData.append('submission', submissionFile);
+    }
+
+    try {
+      const res = await fetch(`/api/assignments/${submittingAssign.id}/submit`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSubMsg('✓ Completed assignment uploaded successfully!');
+        setTimeout(() => {
+          setSubmittingAssign(null);
+          fetchAssignments();
+        }, 1500);
+      } else {
+        setSubMsg(`✗ ${data.error || 'Failed to upload submission'}`);
+      }
+    } catch (err) {
+      setSubMsg('✗ Network error during file upload');
+    } finally {
+      setSubmittingLoader(false);
     }
   };
 
+  const handleGradeChange = (subId, field, val) => {
+    setGradingState(prev => ({
+      ...prev,
+      [subId]: {
+        ...prev[subId],
+        [field]: val
+      }
+    }));
+  };
+
+  const handleSaveGrade = async (sub) => {
+    const state = gradingState[sub.id] || {};
+    const marksObtained = state.marks_obtained !== undefined ? state.marks_obtained : sub.marks_obtained || 0;
+    const grade = state.grade !== undefined ? state.grade : sub.grade || 'A';
+    const feedback = state.feedback !== undefined ? state.feedback : sub.feedback || '';
+
+    try {
+      const res = await fetch(`/api/submissions/${sub.id}/grade`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({
+          marks_obtained: parseFloat(marksObtained),
+          grade,
+          feedback
+        })
+      });
+      if (res.ok) {
+        alert('Points awarded and remarks saved successfully!');
+        fetchAssignments();
+      } else {
+        const data = await res.json();
+        alert(`Error: ${data.error || 'Failed to grade submission'}`);
+      }
+    } catch (err) {
+      alert('Error updating submission evaluation');
+    }
+  };
+
+  // Filter faculty submissions by selected assignment if specified
+  const filteredFacultySubmissions = selectedAssignForGrade
+    ? facultySubmissions.filter(s => String(s.assignment_id) === String(selectedAssignForGrade))
+    : facultySubmissions;
+
   return (
     <div>
-      <h2>📝 Course Assignments</h2>
-      <p style={{ color: 'var(--text-secondary)', marginBottom: '30px' }}>Issue homework assignments and upload completed student submissions.</p>
+      <h2>📝 Course Assignments & Evaluation</h2>
+      <p style={{ color: 'var(--text-secondary)', marginBottom: '25px' }}>
+        Manage homework tasks, upload completed student assignments, award evaluation points, and provide faculty feedback.
+      </p>
 
+      {/* Student 24h Reminder */}
+      {user.role === 'student' && <AssignmentRemindersWidget token={token} />}
+
+      {/* Faculty Post Homework Form */}
       {user.role === 'faculty' && (
         <div className="glass-panel" style={{ padding: '25px', marginBottom: '30px' }}>
-          <h3>Post Homework Task</h3>
+          <h3>Post New Homework Assignment</h3>
           <form onSubmit={handleCreate} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginTop: '15px' }}>
             <select className="glass-input" value={courseId} onChange={e => setCourseId(e.target.value)} required>
               <option value="">Choose Course</option>
@@ -1584,41 +1943,279 @@ function Assignments() {
             <input type="text" className="glass-input" placeholder="Title" value={title} onChange={e => setTitle(e.target.value)} required />
             <input type="datetime-local" className="glass-input" value={due} onChange={e => setDue(e.target.value)} required />
             <input type="number" className="glass-input" placeholder="Total Marks" value={marks} onChange={e => setMarks(e.target.value)} />
-            <textarea className="glass-input" style={{ gridColumn: 'span 2' }} placeholder="Task Guidelines" value={descr} onChange={e => setDescr(e.target.value)} />
+            <textarea className="glass-input" style={{ gridColumn: 'span 2' }} placeholder="Task Description & Submission Guidelines" value={descr} onChange={e => setDescr(e.target.value)} />
             <button type="submit" className="glow-button" style={{ gridColumn: 'span 2' }}>Publish Assignment</button>
           </form>
         </div>
       )}
 
-      <div className="glass-panel" style={{ padding: '30px' }}>
-        <h3>Published Assignments</h3>
+      {/* Student Upload Completed Assignment Modal */}
+      {submittingAssign && (
+        <div className="glass-panel" style={{ padding: '25px', marginBottom: '30px', borderLeft: '4px solid var(--primary)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+            <h3 style={{ margin: 0 }}>📤 Upload Completed Assignment: {submittingAssign.title}</h3>
+            <button onClick={() => setSubmittingAssign(null)} style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '1.2rem', cursor: 'pointer' }}>✖</button>
+          </div>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', marginBottom: '15px' }}>
+            Due Date: <strong>{new Date(submittingAssign.due_date).toLocaleString()}</strong> | Max Marks: <strong>{submittingAssign.total_marks} pts</strong>
+          </p>
+
+          {subMsg && <div style={{ marginBottom: '15px', color: subMsg.startsWith('✓') ? 'var(--success)' : 'var(--danger)', fontWeight: 'bold' }}>{subMsg}</div>}
+
+          <form onSubmit={handleStudentUpload} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem' }}>Select Completed File Attachment (PDF, Document, Code Zip)</label>
+              <input type="file" className="glass-input" onChange={e => setSubmissionFile(e.target.files[0])} />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem' }}>Solution Text / Code Repository Link / Notes</label>
+              <textarea className="glass-input" rows="4" placeholder="Type solution notes or paste submission repository URL here..." value={submissionText} onChange={e => setSubmissionText(e.target.value)} />
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button type="submit" disabled={submittingLoader} className="glow-button">
+                {submittingLoader ? 'Uploading...' : 'Confirm & Submit Completed Assignment'}
+              </button>
+              <button type="button" onClick={() => setSubmittingAssign(null)} style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', border: 'none', padding: '10px 18px', borderRadius: '8px', cursor: 'pointer' }}>
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Active Published Assignments List */}
+      <div className="glass-panel" style={{ padding: '30px', marginBottom: '35px' }}>
+        <h3>Published Assignments (Active Before Submission Date)</h3>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '20px' }}>
+          * Assignments are automatically removed from this table once their submission deadline has passed.
+        </p>
+
         <table className="glass-table">
           <thead>
             <tr>
-              <th>Title</th>
+              <th>Course</th>
+              <th>Assignment Title</th>
               <th>Task description</th>
-              <th>Due Date</th>
-              <th>Max Marks</th>
-              <th>Action</th>
+              <th>Submission Deadline</th>
+              <th>Max Points</th>
+              <th>Status / Action</th>
             </tr>
           </thead>
           <tbody>
-            {assignments.map((a, i) => (
-              <tr key={i}>
-                <td>{a.title}</td>
-                <td>{a.description}</td>
-                <td>{new Date(a.due_date).toLocaleString()}</td>
-                <td>{a.total_marks} pts</td>
-                <td>
-                  {user.role === 'student' ? (
-                    <button onClick={() => handleSubmitAssign(a.id)} className="glow-button" style={{ padding: '6px 12px', fontSize: '0.8rem', borderRadius: '6px' }}>Submit</button>
-                  ) : <span className="badge badge-info">Author Active</span>}
+            {assignments.map((a, i) => {
+              const mySub = mySubmissions.find(s => Number(s.assignment_id) === Number(a.id));
+              return (
+                <tr key={i}>
+                  <td><strong style={{ color: 'var(--primary)' }}>{a.course_code}</strong></td>
+                  <td><strong>{a.title}</strong></td>
+                  <td>{a.description || 'N/A'}</td>
+                  <td style={{ color: new Date(a.due_date) - new Date() < 86400000 ? '#f87171' : 'inherit' }}>
+                    {new Date(a.due_date).toLocaleString()}
+                  </td>
+                  <td>{a.total_marks} pts</td>
+                  <td>
+                    {user.role === 'student' ? (
+                      mySub ? (
+                        <span className={`badge ${mySub.status === 'graded' ? 'badge-success' : 'badge-warning'}`}>
+                          {mySub.status === 'graded' ? '✅ Graded' : '⏳ Submitted'}
+                        </span>
+                      ) : (
+                        <button onClick={() => handleOpenSubmitModal(a)} className="glow-button" style={{ padding: '6px 14px', fontSize: '0.8rem', borderRadius: '6px' }}>
+                          Upload Solution
+                        </button>
+                      )
+                    ) : (
+                      <span className="badge badge-info">Instructor Active</span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+            {assignments.length === 0 && (
+              <tr>
+                <td colSpan="6" style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '25px' }}>
+                  No active assignments currently pending. All past assignments have completed or reached deadline.
                 </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>
+
+      {/* Student View Evaluated Marks & Remarks */}
+      {user.role === 'student' && (
+        <div className="glass-panel" style={{ padding: '30px' }}>
+          <h3>My Completed Submissions, Awarded Points & Faculty Remarks</h3>
+          <table className="glass-table">
+            <thead>
+              <tr>
+                <th>Assignment Title</th>
+                <th>Submitted Date</th>
+                <th>Submission Content</th>
+                <th>Awarded Points</th>
+                <th>Grade</th>
+                <th>Faculty Remarks</th>
+              </tr>
+            </thead>
+            <tbody>
+              {mySubmissions.map((s, i) => (
+                <tr key={i}>
+                  <td><strong>{s.assignment_title || `Assignment #${s.assignment_id}`}</strong></td>
+                  <td>{new Date(s.submitted_at).toLocaleString()}</td>
+                  <td>
+                    {s.attachment ? (
+                      <a href={`/media/${s.attachment}`} target="_blank" rel="noreferrer" style={{ color: 'var(--primary)' }}>📎 View Attachment</a>
+                    ) : s.content ? (
+                      <span style={{ fontSize: '0.85rem' }}>{s.content}</span>
+                    ) : 'Submitted'}
+                  </td>
+                  <td>
+                    {s.status === 'graded' ? (
+                      <strong style={{ color: 'var(--success)', fontSize: '1.05rem' }}>{s.marks_obtained} / {s.total_marks} pts</strong>
+                    ) : (
+                      <span style={{ color: 'var(--warning)', fontSize: '0.85rem' }}>Pending Review</span>
+                    )}
+                  </td>
+                  <td>
+                    {s.status === 'graded' ? (
+                      <span className="badge badge-success">{s.grade || 'A'}</span>
+                    ) : (
+                      <span className="badge badge-secondary">-</span>
+                    )}
+                  </td>
+                  <td>
+                    {s.status === 'graded' ? (
+                      <span style={{ fontStyle: 'italic', color: '#e2e8f0' }}>"{s.feedback || 'Evaluated'}"</span>
+                    ) : (
+                      <span style={{ color: 'var(--text-secondary)' }}>Faculty review pending</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+              {mySubmissions.length === 0 && (
+                <tr>
+                  <td colSpan="6" style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '25px' }}>
+                    No completed homework submissions recorded yet.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Faculty Review & Grade Student Submissions */}
+      {(user.role === 'faculty' || user.role === 'admin') && (
+        <div className="glass-panel" style={{ padding: '30px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '15px' }}>
+            <h3 style={{ margin: 0 }}>Review Student Submissions, Award Points & Provide Remarks</h3>
+            <select
+              className="glass-input"
+              style={{ width: 'auto', minWidth: '220px' }}
+              value={selectedAssignForGrade}
+              onChange={e => setSelectedAssignForGrade(e.target.value)}
+            >
+              <option value="">Filter by Assignment (All)</option>
+              {assignments.map((a, i) => (
+                <option key={i} value={a.id}>[{a.course_code}] {a.title}</option>
+              ))}
+            </select>
+          </div>
+
+          <table className="glass-table">
+            <thead>
+              <tr>
+                <th>Student Details</th>
+                <th>Assignment</th>
+                <th>Submitted File / Work</th>
+                <th>Submitted Date</th>
+                <th>Award Points</th>
+                <th>Grade</th>
+                <th>Faculty Remarks</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredFacultySubmissions.map((s, i) => {
+                const currentVal = gradingState[s.id] || {};
+                const marksVal = currentVal.marks_obtained !== undefined ? currentVal.marks_obtained : (s.marks_obtained !== null ? s.marks_obtained : '');
+                const gradeVal = currentVal.grade !== undefined ? currentVal.grade : s.grade || 'A';
+                const feedbackVal = currentVal.feedback !== undefined ? currentVal.feedback : s.feedback || '';
+
+                return (
+                  <tr key={i}>
+                    <td>
+                      <strong>{s.first_name} {s.last_name}</strong>
+                      <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Roll: {s.roll_number || 'N/A'}</div>
+                    </td>
+                    <td><strong>{s.assignment_title}</strong> ({s.total_marks} pts max)</td>
+                    <td>
+                      {s.attachment ? (
+                        <a href={`/media/${s.attachment}`} target="_blank" rel="noreferrer" style={{ color: 'var(--primary)', fontWeight: 'bold' }}>
+                          📄 Download Work
+                        </a>
+                      ) : null}
+                      {s.content && <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '4px' }}>{s.content}</div>}
+                    </td>
+                    <td>{new Date(s.submitted_at).toLocaleString()}</td>
+                    <td>
+                      <input
+                        type="number"
+                        className="glass-input"
+                        style={{ width: '80px', padding: '4px 8px' }}
+                        placeholder="Points"
+                        value={marksVal}
+                        onChange={e => handleGradeChange(s.id, 'marks_obtained', e.target.value)}
+                      />
+                    </td>
+                    <td>
+                      <select
+                        className="glass-input"
+                        style={{ width: '70px', padding: '4px' }}
+                        value={gradeVal}
+                        onChange={e => handleGradeChange(s.id, 'grade', e.target.value)}
+                      >
+                        <option value="A">A</option>
+                        <option value="B">B</option>
+                        <option value="C">C</option>
+                        <option value="F">F</option>
+                      </select>
+                    </td>
+                    <td>
+                      <input
+                        type="text"
+                        className="glass-input"
+                        style={{ width: '180px', padding: '4px 8px' }}
+                        placeholder="Faculty remarks..."
+                        value={feedbackVal}
+                        onChange={e => handleGradeChange(s.id, 'feedback', e.target.value)}
+                      />
+                    </td>
+                    <td>
+                      <button
+                        onClick={() => handleSaveGrade(s)}
+                        className="glow-button"
+                        style={{ padding: '6px 12px', fontSize: '0.78rem', borderRadius: '6px', background: s.status === 'graded' ? 'rgba(16, 185, 129, 0.2)' : 'var(--primary)' }}
+                      >
+                        {s.status === 'graded' ? 'Update Grade' : 'Award Points'}
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+              {filteredFacultySubmissions.length === 0 && (
+                <tr>
+                  <td colSpan="8" style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '25px' }}>
+                    No student submissions available for evaluation.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
@@ -2571,11 +3168,12 @@ function Notes() {
 
   useEffect(() => {
     fetchNotes();
-    fetch('/api/courses/', { headers: { 'Authorization': `Bearer ${token}` } })
+    const coursesEndpoint = user?.role === 'faculty' ? '/api/courses/my-courses' : '/api/courses/';
+    fetch(coursesEndpoint, { headers: { 'Authorization': `Bearer ${token}` } })
       .then(res => res.json())
       .then(data => setCourses(Array.isArray(data) ? data : []))
       .catch(err => console.error(err));
-  }, []);
+  }, [user]);
 
   const isFacultyOrAdmin = user?.role === 'faculty' || user?.role === 'admin';
 

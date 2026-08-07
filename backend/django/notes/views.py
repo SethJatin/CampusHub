@@ -21,6 +21,10 @@ def note_list(request):
 
     notes = Note.objects.filter(is_public=True)
 
+    if request.user.is_authenticated and request.user.role == 'student':
+        enrolled_ids = Enrollment.objects.filter(student=request.user, status='approved').values_list('course_id', flat=True)
+        notes = notes.filter(course_id__in=enrolled_ids)
+
     if course_id:
         notes = notes.filter(course_id=course_id)
     if note_type:
@@ -88,6 +92,10 @@ def upload_note(request):
         form = NoteForm(request.POST, request.FILES)
         if form.is_valid():
             note = form.save(commit=False)
+            if request.user.role == 'faculty' and note.course and note.course.instructor != request.user:
+                messages.error(request, "You can only upload study notes for your assigned courses.")
+                return redirect('notes:note_list')
+
             note.uploaded_by = request.user
             note.save()
             messages.success(request, "Note uploaded successfully!")
