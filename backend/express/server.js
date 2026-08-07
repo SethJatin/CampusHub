@@ -32,12 +32,16 @@ app.get('/api/health', (req, res) => {
 const authRouter = require('./routes/auth');
 const coursesRouter = require('./routes/courses');
 const attendanceRouter = require('./routes/attendance');
+const examsRouter = require('./routes/exams');
 const coreRouter = require('./routes/notes_events_assignments');
+const mlRouter = require('./routes/ml');
 
 // Mount API Routes
 app.use('/accounts/api', authRouter);
 app.use('/api/courses', coursesRouter);
 app.use('/api/attendance', attendanceRouter);
+app.use('/api/exams', examsRouter);
+app.use('/api/ml', mlRouter);
 app.use('/api', coreRouter);
 
 // Global Error Handler

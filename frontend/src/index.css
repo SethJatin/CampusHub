@@ -21,12 +21,32 @@
   padding: 0;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   font-family: var(--font-sans);
   background: radial-gradient(ellipse at top, #1e1b4b, #0f172a);
   color: var(--text-primary);
   min-height: 100vh;
   overflow-x: hidden;
+}
+
+/* Global Page Entrance Animation */
+.page-animate-fade {
+  animation: pageFadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes pageFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Glassmorphic Panel utility */
@@ -37,6 +57,7 @@ body {
   border: 1px solid var(--border-glass);
   border-radius: 16px;
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
 .glow-button {
@@ -47,13 +68,17 @@ body {
   border-radius: 12px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
 }
 
 .glow-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 0 25px rgba(99, 102, 241, 0.6);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 0 25px rgba(99, 102, 241, 0.65);
+}
+
+.glow-button:active {
+  transform: translateY(0) scale(0.97);
 }
 
 /* Input Fields */
@@ -65,13 +90,14 @@ body {
   padding: 12px 16px;
   width: 100%;
   font-family: inherit;
-  transition: border-color 0.2s;
+  transition: all 0.25s ease;
 }
 
 .glass-input:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+  box-shadow: 0 0 15px rgba(99, 102, 241, 0.35);
+  transform: translateY(-1px);
 }
 
 /* Auth Pages Container */
@@ -81,6 +107,7 @@ body {
   align-items: center;
   justify-content: center;
   padding: 20px;
+  animation: pageFadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .auth-card {
@@ -105,11 +132,23 @@ body {
   flex-direction: column;
 }
 
+.sidebar nav a {
+  transition: all 0.25s ease;
+}
+
+.sidebar nav a:hover {
+  background: rgba(99, 102, 241, 0.15) !important;
+  transform: translateX(5px);
+  color: #fff !important;
+  box-shadow: -3px 0 0 var(--primary);
+}
+
 .main-content {
   flex: 1;
   padding: 40px;
   overflow-y: auto;
   max-height: 100vh;
+  animation: pageFadeIn 0.4s ease-out;
 }
 
 /* Tables */
@@ -132,10 +171,16 @@ body {
   padding: 16px;
   border-bottom: 1px solid var(--border-glass);
   font-size: 0.95rem;
+  transition: color 0.2s;
+}
+
+.glass-table tbody tr {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .glass-table tbody tr:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(255, 255, 255, 0.04);
+  transform: translateX(4px);
 }
 
 /* Metric Cards */
@@ -148,6 +193,12 @@ body {
 
 .metric-card {
   padding: 24px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.metric-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.5);
 }
 
 .metric-value {
@@ -163,9 +214,66 @@ body {
   font-size: 0.8rem;
   font-weight: 600;
   display: inline-block;
+  transition: transform 0.2s;
+}
+
+.badge:hover {
+  transform: scale(1.05);
 }
 
 .badge-success { background: rgba(16, 185, 129, 0.15); color: #10b981; }
 .badge-danger { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
 .badge-warning { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
 .badge-info { background: rgba(99, 102, 241, 0.15); color: #6366f1; }
+
+/* Pulse Animation for Live Status */
+@keyframes pulseRing {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+.pulse-dot {
+  animation: pulseRing 2s infinite;
+}
+
+/* Scroll Animation Utilities */
+.animate-on-scroll {
+  opacity: 0;
+  transform: translateY(35px);
+  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.animate-on-scroll.animated-in {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.scale-on-scroll {
+  opacity: 0;
+  transform: scale(0.92);
+  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.scale-on-scroll.animated-in {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Hover glow & floating effect for feature cards */
+.feature-card-animated {
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.feature-card-animated:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 20px 40px -15px rgba(99, 102, 241, 0.35);
+  border-color: rgba(99, 102, 241, 0.5);
+}

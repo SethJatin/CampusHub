@@ -166,6 +166,37 @@ router.get('/events', authenticateToken, async (req, res) => {
     }
 });
 
+// 1b. Create Event with Poster Upload (Faculty/Admin)
+router.post('/events', authenticateToken, authorizeRoles('admin', 'faculty'), upload.single('banner'), async (req, res) => {
+    const { title, description, category, start_date, end_date, venue, max_participants } = req.body;
+    if (!title || !description || !start_date) {
+        return res.status(400).json({ error: 'Title, description, and start date are required' });
+    }
+    try {
+        const date = new Date().toISOString();
+        let bannerPath = '';
+        if (req.file) {
+            bannerPath = `event_banners/${req.file.filename}`;
+        }
+
+        await db.run(`
+            INSERT INTO events_event (
+                title, description, category, start_date, end_date, venue, department,
+                registration_required, registration_deadline, max_participants, status,
+                banner, attachment, created_at, updated_at, organized_by_id
+            ) VALUES (?, ?, ?, ?, ?, ?, 'General', 1, ?, ?, 'published', ?, '', ?, ?, ?)
+        `, [
+            title, description, category || 'cultural', start_date, end_date || start_date,
+            venue || 'Main Auditorium', start_date, max_participants || 500, bannerPath, date, date, req.user.id
+        ]);
+
+        res.status(201).json({ message: 'Event published successfully with poster' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
 // 2. Register for Event Check-in
 router.post('/events/:id/register', authenticateToken, async (req, res) => {
     try {
@@ -188,29 +219,48 @@ router.post('/events/:id/register', authenticateToken, async (req, res) => {
     }
 });
 
-// 3. Get announcements
+// 3. Get announcements (Auto-removes announcements after event completion)
 router.get('/announcements', authenticateToken, async (req, res) => {
     try {
-        const announcements = await db.query('SELECT * FROM events_announcement WHERE is_published = 1 ORDER BY created_at DESC');
+        const now = new Date().toISOString();
+        // Unpublish announcements whose completion/end date has passed
+        await db.run('UPDATE events_announcement SET is_published = 0 WHERE end_date IS NOT NULL AND end_date < ?', [now]);
+
+        const announcements = await db.query(
+            'SELECT * FROM events_announcement WHERE is_published = 1 AND (end_date IS NULL OR end_date >= ?) ORDER BY created_at DESC',
+            [now]
+        );
         res.status(200).json(announcements);
     } catch (err) {
+        console.error(err);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });
 
 // 4. Create Announcement (Faculty/Admin)
 router.post('/announcements', authenticateToken, authorizeRoles('admin', 'faculty'), async (req, res) => {
-    const { title, content, priority, target_roles } = req.body;
+    const { title, content, priority, target_roles, start_date, end_date } = req.body;
     if (!title || !content) return res.status(400).json({ error: 'Title and content are required' });
     try {
         const date = new Date().toISOString();
         const targetRolesJson = JSON.stringify(target_roles || []);
         await db.run(`
-      INSERT INTO events_announcement (title, content, priority, target_roles, is_published, created_by_id, created_at, updated_at)
-      VALUES (?, ?, ?, ?, 1, ?, ?, ?)
-    `, [title, content, priority || 'normal', targetRolesJson, req.user.id, date, date]);
+      INSERT INTO events_announcement (title, content, priority, target_roles, is_published, start_date, end_date, created_by_id, created_at, updated_at)
+      VALUES (?, ?, ?, ?, 1, ?, ?, ?, ?, ?)
+    `, [title, content, priority || 'normal', targetRolesJson, start_date || null, end_date || null, req.user.id, date, date]);
 
         res.status(201).json({ message: 'Announcement created successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// 5. Delete / Remove Announcement (Faculty/Admin)
+router.delete('/announcements/:id', authenticateToken, authorizeRoles('admin', 'faculty'), async (req, res) => {
+    try {
+        await db.run('DELETE FROM events_announcement WHERE id = ?', [req.params.id]);
+        res.status(200).json({ message: 'Announcement removed successfully' });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Internal Server Error' });
@@ -224,15 +274,29 @@ router.post('/announcements', authenticateToken, authorizeRoles('admin', 'facult
 // 1. Get Notes
 router.get('/notes', authenticateToken, async (req, res) => {
     try {
-        const notes = await db.query('SELECT * FROM notes_note WHERE is_public = 1 ORDER BY created_at DESC');
+        const notes = await db.query(`
+            SELECT n.*,
+                   c.name as course_name,
+                   c.code as course_code,
+                   u.first_name as uploader_first_name,
+                   u.last_name as uploader_last_name,
+                   u.username as uploader_username,
+                   u.role as uploader_role
+            FROM notes_note n
+            LEFT JOIN courses_course c ON n.course_id = c.id
+            LEFT JOIN accounts_user u ON n.uploaded_by_id = u.id
+            WHERE n.is_public = 1
+            ORDER BY n.created_at DESC
+        `);
         res.status(200).json(notes);
     } catch (err) {
+        console.error('Error fetching notes:', err);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });
 
-// 2. Upload NOTE (All verified users)
-router.post('/notes', authenticateToken, upload.single('file'), async (req, res) => {
+// 2. Upload NOTE (Faculty and Admin only)
+router.post('/notes', authenticateToken, authorizeRoles('admin', 'faculty'), upload.single('file'), async (req, res) => {
     const { title, description, note_type, course_id, content } = req.body;
     if (!title || !course_id) {
         return res.status(400).json({ error: 'Title and Course ID are required' });

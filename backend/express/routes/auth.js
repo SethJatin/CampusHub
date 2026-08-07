@@ -3,7 +3,6 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
-const nodemailer = require('nodemailer');
 const db = require('../config/db');
 const { authenticateToken } = require('../middleware/auth');
 
@@ -28,56 +27,6 @@ function verifyPassword(plainPassword, hashedPassword) {
     return bcrypt.compareSync(plainPassword, hashedPassword);
 }
 
-// Nodemailer Helper
-async function sendOTP(email, code) {
-    let transporter;
-    if (!process.env.SMTP_USER || process.env.SMTP_USER === 'ethereal_user_placeholder') {
-        // Generate test Ethereal account
-        const testAccount = await nodemailer.createTestAccount();
-        transporter = nodemailer.createTransport({
-            host: 'smtp.ethereal.email',
-            port: 587,
-            secure: false,
-            auth: {
-                user: testAccount.user,
-                pass: testAccount.pass
-            }
-        });
-    } else {
-        transporter = nodemailer.createTransport({
-            host: process.env.SMTP_HOST,
-            port: parseInt(process.env.SMTP_PORT || '587'),
-            secure: process.env.SMTP_PORT === '465',
-            auth: {
-                user: process.env.SMTP_USER,
-                pass: process.env.SMTP_PASS
-            }
-        });
-    }
-
-    const info = await transporter.sendMail({
-        from: process.env.FROM_EMAIL || '"CampusHub Support" <support@campushub.edu>',
-        to: email,
-        subject: 'CampusHub - Account Verification OTP',
-        text: `Your verification OTP code is: ${code}. It is valid for 10 minutes.`,
-        html: `
-      <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
-        <h2>Welcome to CampusHub!</h2>
-        <p>You have registered an account on CampusHub. Please enter the following 6-digit OTP code to verify your email address:</p>
-        <div style="font-size: 32px; font-weight: bold; background: #e0f2fe; padding: 15px; text-align: center; border-radius: 8px; color: #0284c7; letter-spacing: 5px; margin: 20px 0;">
-          ${code}
-        </div>
-        <p>This code is valid for 10 minutes. If you did not register for CampusHub, please ignore this email.</p>
-      </div>
-    `
-    });
-
-    if (info.host === 'smtp.ethereal.email' || !process.env.SMTP_USER || process.env.SMTP_USER === 'ethereal_user_placeholder') {
-        console.log(`[VERIFICATION EMAIL SENT] OTP code: ${code} for email: ${email}`);
-        console.log(`[Ethereal Mail Preview]`, nodemailer.getTestMessageUrl(info));
-    }
-}
-
 // 1. REGISTER
 router.post('/register', async (req, res) => {
     const { email, password, username, first_name, last_name, role, phone, address, department, roll_number, employee_id, designation } = req.body;
@@ -97,17 +46,7 @@ router.post('/register', async (req, res) => {
         const dateJoined = new Date().toISOString();
         const usernameVal = username || email.split('@')[0];
 
-        // Create verification table if not exists
-        await db.run(`
-      CREATE TABLE IF NOT EXISTS express_verifications (
-        email TEXT PRIMARY KEY,
-        code TEXT,
-        expires_at INTEGER
-      )
-    `);
-
-        // Insert user into accounts_user
-        // is_active = 1, is_verified = 1 (Auto-verified)
+        // Insert user into accounts_user (is_active = 1, is_verified = 1)
         const userResult = await db.run(`
       INSERT INTO accounts_user (
         password, email, username, first_name, last_name, role, is_verified,
@@ -138,53 +77,6 @@ router.post('/register', async (req, res) => {
     } catch (err) {
         console.error('Registration Error:', err);
         res.status(500).json({ error: 'Internal Server Error during registration' });
-    }
-});
-
-// 2. VERIFY OTP
-router.post('/verify-otp', async (req, res) => {
-    const { email, code } = req.body;
-
-    if (!email || !code) {
-        return res.status(400).json({ error: 'Email and OTP code are required' });
-    }
-
-    try {
-        const record = await db.get('SELECT * FROM express_verifications WHERE email = ?', [email]);
-        if (!record) {
-            return res.status(404).json({ error: 'No verification record found for this email' });
-        }
-
-        if (record.code !== code) {
-            return res.status(400).json({ error: 'Invalid verification code' });
-        }
-
-        if (Date.now() > record.expires_at) {
-            return res.status(400).json({ error: 'Verification code has expired' });
-        }
-
-        // Update user active status
-        await db.run('UPDATE accounts_user SET is_verified = 1 WHERE email = ?', [email]);
-        await db.run('DELETE FROM express_verifications WHERE email = ?', [email]);
-
-        // Fetch updated user
-        const user = await db.get('SELECT id, email, username, role, first_name, last_name FROM accounts_user WHERE email = ?', [email]);
-
-        const secret = process.env.JWT_SECRET || 'campushub_jwt_secret_key_2026';
-        const accessToken = jwt.sign(
-            { id: user.id, email: user.email, role: user.role, username: user.username },
-            secret,
-            { expiresIn: '24h' }
-        );
-
-        res.status(200).json({
-            message: 'Account verified successfully!',
-            user,
-            access: accessToken
-        });
-    } catch (err) {
-        console.error('OTP Verification Error:', err);
-        res.status(500).json({ error: 'Internal Server Error' });
     }
 });
 
@@ -258,16 +150,62 @@ router.get('/profile', authenticateToken, async (req, res) => {
 });
 
 router.put('/profile', authenticateToken, async (req, res) => {
-    const { phone, address, bio, first_name, last_name } = req.body;
+    const { phone, address, bio, first_name, last_name, profile_image } = req.body;
     try {
         await db.run(`
-      UPDATE accounts_user
-      SET phone = ?, address = ?, bio = ?, first_name = ?, last_name = ?, updated_at = ?
-      WHERE id = ?
-    `, [phone || '', address || '', bio || '', first_name || '', last_name || '', new Date().toISOString(), req.user.id]);
+            UPDATE accounts_user
+            SET phone = ?, address = ?, bio = ?, first_name = ?, last_name = ?, profile_image = ?, updated_at = ?
+            WHERE id = ?
+        `, [
+            phone || '',
+            address || '',
+            bio || '',
+            first_name || '',
+            last_name || '',
+            profile_image || 'profiles/default.png',
+            new Date().toISOString(),
+            req.user.id
+        ]);
 
         res.status(200).json({ message: 'Profile updated successfully' });
     } catch (err) {
+        console.error('Update Profile Error:', err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// 5. CHANGE PASSWORD
+router.post('/change-password', authenticateToken, async (req, res) => {
+    const { current_password, new_password } = req.body;
+
+    if (!current_password || !new_password) {
+        return res.status(400).json({ error: 'Current password and new password are required' });
+    }
+
+    if (new_password.length < 6) {
+        return res.status(400).json({ error: 'New password must be at least 6 characters long' });
+    }
+
+    try {
+        const user = await db.get('SELECT * FROM accounts_user WHERE id = ?', [req.user.id]);
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        if (!verifyPassword(current_password, user.password)) {
+            return res.status(400).json({ error: 'Current password is incorrect' });
+        }
+
+        const hashedNewPassword = bcrypt.hashSync(new_password, 10);
+        await db.run(`
+            UPDATE accounts_user
+            SET password = ?, updated_at = ?
+            WHERE id = ?
+        `, [hashedNewPassword, new_dateJoined = new Date().toISOString(), req.user.id]);
+
+        res.status(200).json({ message: 'Password changed successfully!' });
+    } catch (err) {
+        console.error('Change Password Error:', err);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });

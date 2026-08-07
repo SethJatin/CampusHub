@@ -1,0 +1,134 @@
+=================================================================================
+                   CAMPUSHUB - FACULTY & ENROLLED STUDENTS LIST
+=================================================================================
+
+COURSE CODE : CS101
+SUBJECT NAME: Programming Fundamentals
+FACULTY     : Prof. Rajesh Sharma (turing@campushub.edu)
+SCHEDULE    : Mon/Wed 09:00 AM | Room: Lab 1
+---------------------------------------------------------------------------------
+ S.No | Roll Number  | Student Name                      | Email Address
+---------------------------------------------------------------------------------
+    1 | STU2026001   | Aarav Sharma                      | student1@campushub.edu
+    2 | STU2026002   | Ananya Verma                      | student2@campushub.edu
+    3 | STU2026003   | Rohan Gupta                       | student3@campushub.edu
+    4 | STU2026004   | Ishaan Patel                      | student4@campushub.edu
+    5 | STU2026005   | Diya Reddy                        | student5@campushub.edu
+    6 | STU2026006   | Kabir Joshi                       | student6@campushub.edu
+    7 | STU2026007   | Vihaan Kulkarni                   | student7@campushub.edu
+    8 | STU2026008   | Saisha Mehta                      | student8@campushub.edu
+    9 | STU2026009   | Aditya Rao                        | student9@campushub.edu
+   10 | STU2026010   | Meera Nair                        | student10@campushub.edu
+   11 | STU2026011   | Arjun Roy                         | student11@campushub.edu
+   12 | STU2026012   | Kavya Sengupta                    | student12@campushub.edu
+   13 | STU2026013   | Dev Das                           | student13@campushub.edu
+   14 | STU2026014   | Anvi Chatterjee                   | student14@campushub.edu
+   15 | STU2026015   | Siddharth Iyer                    | student15@campushub.edu
+---------------------------------------------------------------------------------
+ Total Enrolled Students: 15
+=================================================================================
+
+COURSE CODE : CS102
+SUBJECT NAME: Data Structures & Algorithms
+FACULTY     : Prof. Priya Nambiar (lovelace@campushub.edu)
+SCHEDULE    : Tue/Thu 10:30 AM | Room: Lab 2
+---------------------------------------------------------------------------------
+ S.No | Roll Number  | Student Name                      | Email Address
+---------------------------------------------------------------------------------
+    1 | STU2026016   | Riya Agarwal                      | student16@campushub.edu
+    2 | STU2026017   | Reyansh Jain                      | student17@campushub.edu
+    3 | STU2026018   | Tanvi Mishra                      | student18@campushub.edu
+    4 | STU2026019   | Yash Pandey                       | student19@campushub.edu
+    5 | STU2026020   | Avani Deshmukh                    | student20@campushub.edu
+    6 | STU2026021   | Aryan Bhat                        | student21@campushub.edu
+    7 | STU2026022   | Navya Hegde                       | student22@campushub.edu
+    8 | STU2026023   | Pranav Singh                      | student23@campushub.edu
+    9 | STU2026024   | Sneha Choudhury                   | student24@campushub.edu
+   10 | STU2026025   | Parth Saxena                      | student25@campushub.edu
+   11 | STU2026026   | Aditi Sharma                      | student26@campushub.edu
+   12 | STU2026027   | Krishna Verma                     | student27@campushub.edu
+   13 | STU2026028   | Ishita Gupta                      | student28@campushub.edu
+   14 | STU2026029   | Varun Patel                       | student29@campushub.edu
+   15 | STU2026030   | Shreya Reddy                      | student30@campushub.edu
+---------------------------------------------------------------------------------
+ Total Enrolled Students: 15
+=================================================================================
+
+COURSE CODE : CS103
+SUBJECT NAME: Database Management Systems
+FACULTY     : Prof. Amitava Roy (codd@campushub.edu)
+SCHEDULE    : Mon/Wed 11:30 AM | Room: Hall 101
+---------------------------------------------------------------------------------
+ S.No | Roll Number  | Student Name                      | Email Address
+---------------------------------------------------------------------------------
+    1 | STU2026031   | Sameer Joshi                      | student31@campushub.edu
+    2 | STU2026032   | Pooja Kulkarni                    | student32@campushub.edu
+    3 | STU2026033   | Harish Mehta                      | student33@campushub.edu
+    4 | STU2026034   | Neha Rao                          | student34@campushub.edu
+    5 | STU2026035   | Karan Nair                        | student35@campushub.edu
+    6 | STU2026036   | Swati Roy                         | student36@campushub.edu
+    7 | STU2026037   | Nikhil Sengupta                   | student37@campushub.edu
+    8 | STU2026038   | Tarun Das                         | student38@campushub.edu
+    9 | STU2026039   | Radhika Chatterjee                | student39@campushub.edu
+   10 | STU2026040   | Vivek Iyer                        | student40@campushub.edu
+   11 | STU2026041   | Priyanka Agarwal                  | student41@campushub.edu
+   12 | STU2026042   | Rahul Jain                        | student42@campushub.edu
+   13 | STU2026043   | Simran Mishra                     | student43@campushub.edu
+   14 | STU2026044   | Gautam Pandey                     | student44@campushub.edu
+   15 | STU2026045   | Divya Deshmukh                    | student45@campushub.edu
+---------------------------------------------------------------------------------
+ Total Enrolled Students: 15
+=================================================================================
+
+COURSE CODE : CS104
+SUBJECT NAME: Computer Networks & Security
+FACULTY     : Prof. Sunita Kulkarni (cerf@campushub.edu)
+SCHEDULE    : Tue/Thu 02:00 PM | Room: Hall 202
+---------------------------------------------------------------------------------
+ S.No | Roll Number  | Student Name                      | Email Address
+---------------------------------------------------------------------------------
+    1 | STU2026046   | Manish Bhat                       | student46@campushub.edu
+    2 | STU2026047   | Deepak Hegde                      | student47@campushub.edu
+    3 | STU2026048   | Srishti Singh                     | student48@campushub.edu
+    4 | STU2026049   | Alok Choudhury                    | student49@campushub.edu
+    5 | STU2026050   | Bhavna Saxena                     | student50@campushub.edu
+    6 | STU2026051   | Chetan Sharma                     | student51@campushub.edu
+    7 | STU2026052   | Geeta Verma                       | student52@campushub.edu
+    8 | STU2026053   | Hemant Gupta                      | student53@campushub.edu
+    9 | STU2026054   | Indira Patel                      | student54@campushub.edu
+   10 | STU2026055   | Jayesh Reddy                      | student55@campushub.edu
+   11 | STU2026056   | Kiran Joshi                       | student56@campushub.edu
+   12 | STU2026057   | Madhav Kulkarni                   | student57@campushub.edu
+   13 | STU2026058   | Neeraj Mehta                      | student58@campushub.edu
+   14 | STU2026059   | Omkar Rao                         | student59@campushub.edu
+   15 | STU2026060   | Payal Nair                        | student60@campushub.edu
+---------------------------------------------------------------------------------
+ Total Enrolled Students: 15
+=================================================================================
+
+COURSE CODE : CS105
+SUBJECT NAME: Software Engineering Principles
+FACULTY     : Prof. Vikram Mehta (hamilton@campushub.edu)
+SCHEDULE    : Fri 10:00 AM | Room: Hall 303
+---------------------------------------------------------------------------------
+ S.No | Roll Number  | Student Name                      | Email Address
+---------------------------------------------------------------------------------
+    1 | STU2026061   | Rakesh Roy                        | student61@campushub.edu
+    2 | STU2026062   | Sandeep Sengupta                  | student62@campushub.edu
+    3 | STU2026063   | Trupti Das                        | student63@campushub.edu
+    4 | STU2026064   | Utkarsh Chatterjee                | student64@campushub.edu
+    5 | STU2026065   | Vandana Iyer                      | student65@campushub.edu
+    6 | STU2026066   | Wasim Agarwal                     | student66@campushub.edu
+    7 | STU2026067   | Yamini Jain                       | student67@campushub.edu
+    8 | STU2026068   | Yogesh Mishra                     | student68@campushub.edu
+    9 | STU2026069   | Abhinav Pandey                    | student69@campushub.edu
+   10 | STU2026070   | Bhuvan Deshmukh                   | student70@campushub.edu
+   11 | STU2026071   | Chaitra Bhat                      | student71@campushub.edu
+   12 | STU2026072   | Darshan Hegde                     | student72@campushub.edu
+   13 | STU2026073   | Esha Singh                        | student73@campushub.edu
+   14 | STU2026074   | Farhan Choudhury                  | student74@campushub.edu
+   15 | STU2026075   | Gaurav Saxena                     | student75@campushub.edu
+---------------------------------------------------------------------------------
+ Total Enrolled Students: 15
+=================================================================================
+

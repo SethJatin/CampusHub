@@ -49,7 +49,7 @@ async function runTests() {
         password, email, username, first_name, last_name, role, is_verified,
         is_active, is_superuser, is_staff, date_joined, created_at, updated_at,
         profile_image, phone, address, bio
-      ) VALUES (?, ?, ?, ?, ?, ?, 0, 1, 0, 0, ?, ?, ?, 'profiles/default.png', '', '', '')
+      ) VALUES (?, ?, ?, ?, ?, ?, 1, 1, 0, 0, ?, ?, ?, 'profiles/default.png', '', '', '')
     `, [hashedPassword, reqBody.email, 'nodetest', reqBody.first_name, reqBody.last_name, reqBody.role, dateJoined, dateJoined, dateJoined]);
 
     const createdUserId = userResult.id;
@@ -62,25 +62,7 @@ async function runTests() {
     `, [createdUserId, reqBody.roll_number, reqBody.roll_number, reqBody.department]);
     console.log('✓ Created corresponding StudentProfile record');
 
-    const otpCode = '987654';
-    const expiresAt = Date.now() + 10 * 60 * 1000;
-    await db.run('INSERT OR REPLACE INTO express_verifications (email, code, expires_at) VALUES (?, ?, ?)', [testEmail, otpCode, expiresAt]);
-    console.log('✓ Saved Nodemailer OTP code (987654) into express_verifications');
-
-    // 4. Test Verification
-    console.log('\nTesting OTP Verification validation...');
-    const verifyRecord = await db.get('SELECT * FROM express_verifications WHERE email = ?', [testEmail]);
-    if (!verifyRecord || verifyRecord.code !== '987654') {
-      throw new Error('Verification OTP mismatch or not found');
-    }
-    console.log('✓ Verification code matches successfully');
-
-    // Update user to verified
-    await db.run('UPDATE accounts_user SET is_verified = 1 WHERE email = ?', [testEmail]);
-    await db.run('DELETE FROM express_verifications WHERE email = ?', [testEmail]);
-    console.log('✓ Updated accounts_user "is_verified" to 1, cleaned verify record');
-
-    // 5. Test Login Authentication
+    // 4. Test Login Authentication
     console.log('\nTesting Password Authentication...');
     const loggedUser = await db.get('SELECT * FROM accounts_user WHERE email = ?', [testEmail]);
     const passwordMatch = bcrypt.compareSync(reqBody.password, loggedUser.password);

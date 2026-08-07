@@ -12,8 +12,8 @@ FRONTEND_DIST = PROJECT_ROOT / 'frontend' / 'dist'
 
 
 def home_view(request):
-    """Serve the React frontend for the main application UI."""
-    return render_react_page(request)
+    """Serve the Django home page template."""
+    return render(request, 'home.html')
 
 
 def render_react_page(request):
