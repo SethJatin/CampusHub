@@ -1,0 +1,116 @@
+================================================================================
+          CAMPUSHUB - FULL SYSTEM ARCHITECTURE & EXPLANATION GUIDE
+================================================================================
+
+1. OVERVIEW OF DJANGO (BACKEND FRAMEWORK)
+--------------------------------------------------------------------------------
+Django serves as the robust, secure Python-based backend REST API engine for 
+CampusHub.
+
+Key Roles & Uses of Django in CampusHub:
+- REST API Provider: Processes HTTP requests from the React frontend and returns 
+  structured JSON data payloads.
+- ORM (Object-Relational Mapper): Translates Python model classes into raw SQL 
+  queries seamlessly interacting with SQLite3 (`db.sqlite3`).
+- Modular Architecture: Organized into specialized Django applications:
+  * `accounts`: User roles (Student, Faculty, Admin), authentication, profiles.
+  * `courses`: Course creation, subject offerings, enrollment approvals, attendance.
+  * `assignments`: Task creation, student submissions, and grading.
+  * `notes`: Shared PDF study materials, comments, and rating logic.
+  * `events`: Campus events, hackathons, and announcements.
+- Security & Middleware: Manages CORS headers (allowing React requests), request 
+  throttling, password hashing (PBKDF2), and permission enforcement.
+
+
+2. OVERVIEW OF REACT (FRONTEND FRAMEWORK)
+--------------------------------------------------------------------------------
+React is the modern JavaScript library powering CampusHub's Single Page Application 
+(SPA) user interface.
+
+Key Roles & Uses of React in CampusHub:
+- Dynamic User Interface: Fast, responsive glassmorphic UI that updates 
+  dynamically without requiring full browser page reloads.
+- Client-Side Routing: Managed via `react-router-dom` to provide seamless page 
+  transitions between Home, Courses, Notes, Assignments, and Dashboards.
+- Global State Management: Utilizes React Context (`AuthContext`) to maintain 
+  user login state, active tokens, and current user profile globally across all 
+  components.
+- Interactive Features:
+  * Live filterable search for PDF Study Notes.
+  * Drag-and-drop assignment file submissions.
+  * AI Risk Analysis dashboard indicators for faculty.
+  * One-click course enrollment requests.
+
+
+3. JWT (JSON WEB TOKEN) AUTHENTICATION
+--------------------------------------------------------------------------------
+JWT is a compact, URL-safe standard used for secure, stateless authentication 
+between React and Django.
+
+How JWT Works in CampusHub:
+1. User Login: The user enters credentials on the React Login page.
+2. Token Generation: Django verifies credentials and issues two tokens:
+   - Access Token: Short-lived token used to authenticate API requests.
+   - Refresh Token: Long-lived token used to generate new access tokens without 
+     forcing re-login.
+3. Client Storage: React stores the access token in browser storage / memory.
+4. Authorization Header: For every protected API call (e.g., submitting assignments, 
+   checking risk scores), React attaches `Authorization: Bearer <access_token>`.
+5. Verification: Django decrypts and validates the token signature to confirm 
+   user identity and role permission.
+
+
+4. MAIN FILES AND THEIR ROLES
+--------------------------------------------------------------------------------
+A. BACKEND MAIN FILES (Django):
+--------------------------------
+- `manage.py`: Django command-line execution utility (runs server, migrations).
+- `campusHub/settings.py`: Central configuration file setting up installed apps, 
+  database connection to SQLite3, CORS policy, middleware, and JWT keys.
+- `campusHub/urls.py`: Main backend routing file directing incoming API URLs to 
+  specific Django views and application controllers.
+- `accounts/models.py`: Defines `User` (AbstractUser), `StudentProfile`, 
+  `FacultyProfile`, and `Department`.
+- `courses/models.py`: Defines `Course`, `Enrollment`, `Attendance`, and `CourseMaterial`.
+- `assignments/models.py`: Defines `Assignment` and `Submission` models.
+- `notes/models.py`: Defines `Note`, `NoteComment`, and `NoteRating`.
+- `events/models.py`: Defines `Event`, `EventRegistration`, and `Announcement`.
+- `seed_master_data.py`: Database seeding script that pre-populates initial demo 
+  courses, users, notes, and attendance logs.
+
+B. FRONTEND MAIN FILES (React):
+-------------------------------
+- `src/main.jsx`: React entry point that mounts the application into DOM (`index.html`).
+- `src/App.jsx`: Top-level application component defining routes and protected views.
+- `src/context/AuthContext.jsx`: Handles login, logout, token storage, and user 
+  state context.
+- `src/pages/HomePage.jsx`: Landing page presenting platform statistics and feature overview.
+- `src/pages/Dashboard.jsx`: Customized dashboard for Students and Faculty members.
+- `src/pages/Notes.jsx`: PDF study material sharing hub with rating and filter tools.
+- `src/pages/Assignments.jsx`: Homework posting and submission submission interface.
+- `src/pages/Attendance.jsx`: Faculty attendance logging and student attendance view.
+- `src/components/AIRiskAnalysisPanel.jsx`: AI visual widget identifying at-risk 
+  students based on low attendance or poor assignment scores.
+
+
+5. SQLITE3 DATABASE (`db.sqlite3`)
+--------------------------------------------------------------------------------
+`db.sqlite3` is the local, self-contained relational database file generated 
+and managed by Django.
+
+Key Roles & Uses of SQLite3 in CampusHub:
+- Data Persistence: Permanently stores all platform entities in relational tables:
+  * `accounts_user`: Stores user credentials, hashed passwords, roles.
+  * `accounts_studentprofile` & `accounts_facultyprofile`: User metadata.
+  * `courses_course` & `courses_enrollment`: Academic subjects and enrollment statuses.
+  * `assignments_assignment` & `assignments_submission`: Tasks and grades.
+  * `notes_note`: Uploaded note metadata and file paths.
+  * `courses_attendance`: Daily attendance logs and session timestamps.
+- Zero Configuration: Ideal for local development, rapid testing, and portable 
+  demonstration without needing external database server setup.
+- Foreign Key Integrity: Enforces strict data relationships between tables using 
+  Primary Keys (`id`) and Foreign Keys (`user_id`, `course_id`, `student_id`).
+
+================================================================================
+                       END OF EXPLANATION GUIDE
+================================================================================

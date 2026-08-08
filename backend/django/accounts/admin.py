@@ -19,7 +19,7 @@ class UserAdmin(BaseUserAdmin):
     ordering = ('-created_at',)
 
     fieldsets = BaseUserAdmin.fieldsets + (
-        ('Additional Info', {'fields': ('role', 'profile_image', 'phone', 'address', 'date_of_birth', 'bio', 'is_verified')}),
+        ('Additional Info', {'fields': ('role', 'profile_image', 'phone', 'address', 'date_of_birth', 'bio', 'is_verified', 'security_sentence')}),
     )
     add_fieldsets = BaseUserAdmin.add_fieldsets + (
         ('Additional Info', {'fields': ('role',)}),

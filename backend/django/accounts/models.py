@@ -68,6 +68,12 @@ class User(AbstractUser):
         default=False,
         help_text=_('Whether the user email is verified')
     )
+    security_sentence = models.CharField(
+        max_length=255,
+        blank=True,
+        default='',
+        help_text=_('Unique secret sentence used for password recovery')
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -268,3 +274,31 @@ class Department(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.code})"
+
+
+class PasswordResetOTP(models.Model):
+    """
+    Model for storing temporary OTPs sent to users for password recovery via email.
+    """
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='password_reset_otps'
+    )
+    otp_code = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    is_used = models.BooleanField(default=False)
+
+    class Meta:
+        verbose_name = _('password reset OTP')
+        verbose_name_plural = _('password reset OTPs')
+        ordering = ['-created_at']
+
+    def is_valid(self):
+        from django.utils import timezone
+        return not self.is_used and timezone.now() <= self.expires_at
+
+    def __str__(self):
+        return f"OTP for {self.user.email} (used={self.is_used})"
+

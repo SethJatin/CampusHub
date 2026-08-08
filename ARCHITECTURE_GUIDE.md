@@ -1,6 +1,6 @@
 # CampusHub - Comprehensive Code Architecture, Routing & Function Reference Guide
 
-This document provides an end-to-end technical reference for **CampusHub**, covering every imported library, complete routing architecture (Frontend, Express API, Django Templates), and a function-by-function breakdown of the codebase.
+This document provides an end-to-end technical reference for **CampusHub**, covering every imported library, complete routing architecture (Frontend SPA, Django REST API), and a function-by-function breakdown of the codebase.
 
 ---
 
@@ -10,9 +10,8 @@ This document provides an end-to-end technical reference for **CampusHub**, cove
 3. [End-to-End Data & Request Flow Diagram](#3-end-to-end-data--request-flow-diagram)
 4. [Function-by-Function Code Breakdown](#4-function-by-function-code-breakdown)
    - [Frontend (`frontend/src/App.jsx`)](#a-frontend-srcappjsx)
-   - [Express Backend (`backend/express/`)](#b-express-backend-backendexpress)
-   - [Django Backend (`backend/django/`)](#c-django-backend-backenddjango)
-   - [Machine Learning Pipeline (`backend/ml/`)](#d-machine-learning-pipeline-backendml)
+   - [Django Pure REST API Backend (`backend/django/`)](#b-django-backend-backenddjango)
+   - [Machine Learning Pipeline (`backend/ml/`)](#c-machine-learning-pipeline-backendml)
 
 ---
 
@@ -26,19 +25,6 @@ This document provides an end-to-end technical reference for **CampusHub**, cove
 | `react-router-dom` | `src/App.jsx` | Client-side routing SPA manager (`BrowserRouter`, `Routes`, `Route`, `Navigate`, `useNavigate`, `Link`, `useLocation`). |
 | `vite` | Root build tool | High-performance dev server with Instant Hot Module Replacement (HMR) and production bundling. |
 | `@vitejs/plugin-react` | `vite.config.js` | Enables JSX transform and React fast refresh support for Vite. |
-
-### Express Backend Dependencies (`backend/express/package.json`)
-| Library | Used In | Purpose & Explanation |
-| :--- | :--- | :--- |
-| `express` | `server.js`, `routes/*.js` | Fast, unopinionated web framework for Node.js routing and middleware handling. |
-| `cors` | `server.js` | Middleware enabling Cross-Origin Resource Sharing (CORS) between frontend (port 5173) and backend (port 5000). |
-| `dotenv` | `server.js` | Loads environment variables from `.env` file into `process.env`. |
-| `bcryptjs` | `routes/auth.js`, `seed_database.js` | Secure password hashing algorithm for student and faculty accounts. |
-| `jsonwebtoken` | `routes/auth.js`, `middleware/auth.js` | Generates and verifies JWT tokens for stateless API authentication. |
-| `multer` | `routes/notes_events_assignments.js` | Middleware for handling `multipart/form-data` (PDF study note uploads, homework submission attachments). |
-| `nodemailer` | Backend utilities | Send email notifications for registrations or password resets. |
-| `sqlite3` | `config/db.js` | Asynchronous SQLite database driver for executing queries against `db.sqlite3`. |
-| `nodemon` | NPM dev script | Automatically restarts the Express server whenever file changes occur. |
 
 ### Django & Python Dependencies (`backend/django/` & `backend/ml/`)
 | Library | Used In | Purpose & Explanation |
@@ -54,18 +40,16 @@ This document provides an end-to-end technical reference for **CampusHub**, cove
 
 ## 2. Complete Project Routing Architecture
 
-CampusHub operates with a **dual-service architecture**:
+CampusHub operates with a **pure REST API decoupled architecture**:
 
 ```text
 Browser Client (User)
        │
-       ├──► Port 5173 : Vite React Single Page Application (Modern Glassmorphic UI)
-       │         │
-       │         ├── Proxy `/api/*`         ──► Port 5000 : Express Node.js Backend API
-       │         ├── Proxy `/accounts/api/*` ──► Port 5000 : Express Auth API
-       │         └── Proxy `/admin/*`       ──► Port 8000 : Django Server & Admin
-       │
-       └──► Port 8000 : Django Full-Stack Server (Server-Side Rendered HTML Templates)
+       └──► Port 5173 : Vite React Single Page Application (Modern Glassmorphic UI in /frontend)
+                 │
+                 ├── Proxy `/api/*`          ──► Port 8000 : Pure Django REST API Backend
+                 ├── Proxy `/accounts/api/*` ──► Port 8000 : Pure Django REST Auth & User API
+                 └── Proxy `/admin/*`        ──► Port 8000 : Django Admin Panel
 ```
 
 ### A. Frontend Routes (`frontend/src/App.jsx`)
